@@ -7,6 +7,14 @@ CHAINCODE_NAME="herbionyx-chaincode"
 CHAINCODE_VERSION="1.0"
 CHAINCODE_SEQUENCE="1"
 
+# Set Fabric configuration paths
+export FABRIC_CFG_PATH=${PWD}/../config
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -70,12 +78,9 @@ function networkDown() {
 function createChannel() {
   echo -e "${GREEN}Creating channel: ${CHANNEL_NAME}${NC}"
   
-  # Set environment for peer0.org1
-  export CORE_PEER_TLS_ENABLED=true
-  export CORE_PEER_LOCALMSPID="Org1MSP"
-  export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
-  export CORE_PEER_MSPCONFIGPATH=${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp
-  export CORE_PEER_ADDRESS=localhost:7051
+  # Generate channel configuration transaction
+  echo -e "${YELLOW}Generating channel configuration transaction...${NC}"
+  configtxgen -profile HerbionYXChannel -outputCreateChannelTx ../channel-artifacts/${CHANNEL_NAME}.tx -channelID $CHANNEL_NAME
   
   # Create channel
   peer channel create -o localhost:7050 -c $CHANNEL_NAME --ordererTLSHostnameOverride orderer.herbionyx.com -f ../channel-artifacts/${CHANNEL_NAME}.tx --outputBlock ../channel-artifacts/${CHANNEL_NAME}.block --tls --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
@@ -89,16 +94,9 @@ function createChannel() {
 function deployChaincode() {
   echo -e "${GREEN}Deploying chaincode: ${CHAINCODE_NAME}${NC}"
   
-  # Set environment
-  export CORE_PEER_TLS_ENABLED=true
-  export CORE_PEER_LOCALMSPID="Org1MSP"
-  export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
-  export CORE_PEER_MSPCONFIGPATH=${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp
-  export CORE_PEER_ADDRESS=localhost:7051
-  
   # Package chaincode
   echo -e "${YELLOW}Packaging chaincode...${NC}"
-  peer lifecycle chaincode package ${CHAINCODE_NAME}.tar.gz --path ../chaincode --lang node --label ${CHAINCODE_NAME}_${CHAINCODE_VERSION}
+  peer lifecycle chaincode package ${CHAINCODE_NAME}.tar.gz --path ../../chaincode --lang node --label ${CHAINCODE_NAME}_${CHAINCODE_VERSION}
   
   # Install chaincode
   echo -e "${YELLOW}Installing chaincode...${NC}"
@@ -117,6 +115,18 @@ function deployChaincode() {
   peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.herbionyx.com --channelID $CHANNEL_NAME --name $CHAINCODE_NAME --version $CHAINCODE_VERSION --sequence $CHAINCODE_SEQUENCE --tls --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem --peerAddresses localhost:7051 --tlsRootCertFiles ${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
   
   echo -e "${GREEN}✅ Chaincode deployed successfully!${NC}"
+}
+
+function generateGenesis() {
+  echo -e "${GREEN}Generating genesis block...${NC}"
+  
+  # Create channel-artifacts directory
+  mkdir -p ../channel-artifacts
+  
+  # Generate genesis block
+  configtxgen -profile HerbionYXOrdererGenesis -channelID system-channel -outputBlock ../channel-artifacts/genesis.block
+  
+  echo -e "${GREEN}✅ Genesis block generated successfully!${NC}"
 }
 
 # Parse command line arguments
@@ -157,6 +167,9 @@ done
 case $MODE in
   up )
     networkUp
+    ;;
+  genesis )
+    generateGenesis
     ;;
   down )
     networkDown

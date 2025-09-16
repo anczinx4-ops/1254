@@ -29,6 +29,7 @@ services:
     image: hyperledger/fabric-orderer:latest
     environment:
       - FABRIC_LOGGING_SPEC=INFO
+      - FABRIC_CFG_PATH=/etc/hyperledger/fabric
       - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
       - ORDERER_GENERAL_LISTENPORT=7050
       - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
@@ -53,6 +54,7 @@ services:
     working_dir: /root
     command: orderer
     volumes:
+      - ./config:/etc/hyperledger/fabric
       - ../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp:/var/hyperledger/orderer/msp
       - ../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/tls/:/var/hyperledger/orderer/tls
       - orderer.herbionyx.com:/var/hyperledger/production/orderer
@@ -68,6 +70,7 @@ services:
     image: hyperledger/fabric-peer:latest
     environment:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
+      - CORE_PEER_FILESYSTEMPATH=/var/hyperledger/production
       - FABRIC_LOGGING_SPEC=INFO
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=false
@@ -88,6 +91,7 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0org1"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
+      - ./config:/etc/hyperledger/peercfg
       - ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com:/etc/hyperledger/fabric
       - peer0.org1.herbionyx.com:/var/hyperledger/production
     working_dir: /root
@@ -95,6 +99,8 @@ services:
     ports:
       - 7051:7051
       - 9444:9444
+    depends_on:
+      - couchdb0
     networks:
       - herbionyx
 
@@ -106,6 +112,7 @@ services:
       - COUCHDB_PASSWORD=adminpw
     ports:
       - "5984:5984"
+    container_name: couchdb0
     networks:
       - herbionyx
 
