@@ -152,7 +152,8 @@ const BatchTracker: React.FC = () => {
         )}
 
         {/* Tracking Results */}
-        {trackingResult && (
+        <>
+          {trackingResult && (
           <div className="space-y-8">
             {/* Batch Overview */}
             <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-6 border border-indigo-200">
@@ -332,10 +333,10 @@ const BatchTracker: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+          )}
 
-        {/* Demo Instructions */}
-        {!trackingResult && !loading && (
+          {/* Demo Instructions */}
+          {!trackingResult && !loading && (
           <div className="text-center py-12">
             <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Track Any Batch</h3>
@@ -351,7 +352,8 @@ const BatchTracker: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
+          )}
+        </>
       </div>
     </div>
   );
