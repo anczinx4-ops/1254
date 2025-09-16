@@ -82,7 +82,18 @@ npx hardhat run scripts/deploy.js --network localhost
 
 This will deploy contracts and save addresses to `src/config/contracts.json`.
 
-### 6. Start Frontend
+### 6. Start Backend Server
+
+In a new terminal, navigate to the server directory and start the backend:
+```bash
+cd server
+npm install
+npm run dev
+```
+
+This will start the Node.js backend server on `http://localhost:5000`.
+
+### 7. Start Frontend
 
 ```bash
 npm run dev

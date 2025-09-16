@@ -15,6 +15,8 @@ const PORT = process.env.PORT || 5000;
 const { router: authRoutes } = require('./routes/auth');
 const collectionRoutes = require('./routes/collection');
 const trackingRoutes = require('./routes/tracking');
+const blockchainRoutes = require('./routes/blockchain');
+const ipfsRoutes = require('./routes/ipfs');
 
 // Security middleware
 app.use(helmet({
@@ -64,6 +66,8 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/collection', collectionRoutes);
 app.use('/api/tracking', trackingRoutes);
+app.use('/api/blockchain', blockchainRoutes);
+app.use('/api/ipfs', ipfsRoutes);
 
 // Quality testing routes
 app.use('/api/quality', require('./routes/quality'));
