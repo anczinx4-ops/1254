@@ -1,27 +1,18 @@
 class IPFSService {
-  private baseUrl = '/api/ipfs';
+  // Demo IPFS service - in production this would connect to real IPFS
 
   async uploadJSON(jsonData: any, name: string) {
     try {
-      const response = await fetch(`${this.baseUrl}/upload-json`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          jsonData,
-          name
-        })
-      });
-
-      const data = await response.json();
+      // Demo mode - simulate IPFS upload
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload JSON to IPFS');
-      }
-
-      return data.data;
+      const mockHash = `Qm${Math.random().toString(36).substr(2, 44)}`;
+      
+      return {
+        success: true,
+        ipfsHash: mockHash,
+        pinataUrl: `https://gateway.pinata.cloud/ipfs/${mockHash}`
+      };
     } catch (error) {
       console.error('Error uploading JSON to IPFS:', error);
       return { success: false, error: (error as Error).message };
@@ -30,24 +21,16 @@ class IPFSService {
 
   async uploadFile(file: File) {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch(`${this.baseUrl}/upload-file`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      });
-
-      const data = await response.json();
+      // Demo mode - simulate file upload
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload file to IPFS');
-      }
-
-      return data.data;
+      const mockHash = `Qm${Math.random().toString(36).substr(2, 44)}`;
+      
+      return {
+        success: true,
+        ipfsHash: mockHash,
+        pinataUrl: `https://gateway.pinata.cloud/ipfs/${mockHash}`
+      };
     } catch (error) {
       console.error('Error uploading file to IPFS:', error);
       return { success: false, error: (error as Error).message };
@@ -56,21 +39,18 @@ class IPFSService {
 
   async getFile(ipfsHash: string) {
     try {
-      const response = await fetch(`${this.baseUrl}/get-file/${ipfsHash}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
+      // Demo mode - return mock metadata
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get file from IPFS');
-      }
-
       return {
         success: true,
-        data: data.data
+        data: {
+          type: 'collection',
+          herbSpecies: 'Ashwagandha',
+          collector: 'John Collector',
+          weight: 500,
+          notes: 'High quality herbs collected from approved zone'
+        }
       };
     } catch (error) {
       console.error('Error retrieving file from IPFS:', error);
@@ -79,107 +59,43 @@ class IPFSService {
   }
 
   async createCollectionMetadata(collectionData: any) {
-    try {
-      const response = await fetch(`${this.baseUrl}/create-collection-metadata`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          collectionData
-        })
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create collection metadata');
-      }
-
-      return data.data;
-    } catch (error) {
-      console.error('Error creating collection metadata:', error);
-      return { success: false, error: (error as Error).message };
-    }
+    const metadata = {
+      type: 'collection',
+      timestamp: new Date().toISOString(),
+      ...collectionData
+    };
+    
+    return await this.uploadJSON(metadata, `collection-${collectionData.batchId}`);
   }
 
   async createQualityTestMetadata(testData: any) {
-    try {
-      const response = await fetch(`${this.baseUrl}/create-quality-test-metadata`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          testData
-        })
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create quality test metadata');
-      }
-
-      return data.data;
-    } catch (error) {
-      console.error('Error creating quality test metadata:', error);
-      return { success: false, error: (error as Error).message };
-    }
+    const metadata = {
+      type: 'quality_test',
+      timestamp: new Date().toISOString(),
+      ...testData
+    };
+    
+    return await this.uploadJSON(metadata, `quality-test-${testData.eventId}`);
   }
 
   async createProcessingMetadata(processData: any) {
-    try {
-      const response = await fetch(`${this.baseUrl}/create-processing-metadata`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          processData
-        })
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create processing metadata');
-      }
-
-      return data.data;
-    } catch (error) {
-      console.error('Error creating processing metadata:', error);
-      return { success: false, error: (error as Error).message };
-    }
+    const metadata = {
+      type: 'processing',
+      timestamp: new Date().toISOString(),
+      ...processData
+    };
+    
+    return await this.uploadJSON(metadata, `processing-${processData.eventId}`);
   }
 
   async createManufacturingMetadata(mfgData: any) {
-    try {
-      const response = await fetch(`${this.baseUrl}/create-manufacturing-metadata`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          mfgData
-        })
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create manufacturing metadata');
-      }
-
-      return data.data;
-    } catch (error) {
-      console.error('Error creating manufacturing metadata:', error);
-      return { success: false, error: (error as Error).message };
-    }
+    const metadata = {
+      type: 'manufacturing',
+      timestamp: new Date().toISOString(),
+      ...mfgData
+    };
+    
+    return await this.uploadJSON(metadata, `manufacturing-${mfgData.eventId}`);
   }
 }
 

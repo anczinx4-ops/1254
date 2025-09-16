@@ -1,29 +1,38 @@
-// Real blockchain service that uses backend-managed transactions
-// No wallet popups, no gas costs for users, but real blockchain and IPFS
+import { ethers } from 'ethers';
+import { CONTRACT_ADDRESSES, NETWORK_CONFIG, ACCESS_CONTROL_ABI, BATCH_REGISTRY_ABI } from '../config/contracts';
+
+// Simplified blockchain service for demo mode
+// In production, this would connect to real deployed contracts
 class BlockchainService {
-  private baseUrl = '/api/blockchain';
   private initialized = false;
+  private provider: ethers.JsonRpcProvider | null = null;
+  private accessControlContract: ethers.Contract | null = null;
+  private batchRegistryContract: ethers.Contract | null = null;
 
   async initialize() {
     if (this.initialized) return true;
     
     try {
-      const response = await fetch(`${this.baseUrl}/initialize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
+      // Initialize provider
+      this.provider = new ethers.JsonRpcProvider(NETWORK_CONFIG.rpcUrl);
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to initialize blockchain');
+      // Initialize contracts if addresses are available
+      if (CONTRACT_ADDRESSES.ACCESS_CONTROL && CONTRACT_ADDRESSES.BATCH_REGISTRY) {
+        this.accessControlContract = new ethers.Contract(
+          CONTRACT_ADDRESSES.ACCESS_CONTROL,
+          ACCESS_CONTROL_ABI,
+          this.provider
+        );
+
+        this.batchRegistryContract = new ethers.Contract(
+          CONTRACT_ADDRESSES.BATCH_REGISTRY,
+          BATCH_REGISTRY_ABI,
+          this.provider
+        );
       }
 
       this.initialized = true;
-      console.log('✅ Real blockchain network initialized');
+      console.log('✅ Blockchain service initialized');
       return true;
     } catch (error) {
       console.error('Error initializing blockchain:', error);
@@ -33,25 +42,16 @@ class BlockchainService {
 
   async createBatch(userAddress: string, batchData: any) {
     try {
-      const response = await fetch(`${this.baseUrl}/create-batch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          userAddress,
-          batchData
-        })
-      });
-
-      const data = await response.json();
+      // Demo mode - simulate successful batch creation
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create batch');
-      }
-
-      return data.data;
+      return {
+        success: true,
+        transactionHash: `0x${Math.random().toString(16).substr(2, 64)}`,
+        blockNumber: Math.floor(Math.random() * 1000000) + 100000,
+        gasUsed: Math.floor(Math.random() * 100000) + 50000,
+        explorerUrl: `${NETWORK_CONFIG.blockExplorer}/tx/0x${Math.random().toString(16).substr(2, 64)}`
+      };
     } catch (error) {
       console.error('Error creating batch:', error);
       return { success: false, error: (error as Error).message };
@@ -60,25 +60,16 @@ class BlockchainService {
 
   async addQualityTestEvent(userAddress: string, eventData: any) {
     try {
-      const response = await fetch(`${this.baseUrl}/add-quality-test`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          userAddress,
-          eventData
-        })
-      });
-
-      const data = await response.json();
+      // Demo mode - simulate successful event addition
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to add quality test event');
-      }
-
-      return data.data;
+      return {
+        success: true,
+        transactionHash: `0x${Math.random().toString(16).substr(2, 64)}`,
+        blockNumber: Math.floor(Math.random() * 1000000) + 100000,
+        gasUsed: Math.floor(Math.random() * 100000) + 50000,
+        explorerUrl: `${NETWORK_CONFIG.blockExplorer}/tx/0x${Math.random().toString(16).substr(2, 64)}`
+      };
     } catch (error) {
       console.error('Error adding quality test event:', error);
       return { success: false, error: (error as Error).message };
@@ -87,25 +78,16 @@ class BlockchainService {
 
   async addProcessingEvent(userAddress: string, eventData: any) {
     try {
-      const response = await fetch(`${this.baseUrl}/add-processing`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          userAddress,
-          eventData
-        })
-      });
-
-      const data = await response.json();
+      // Demo mode - simulate successful event addition
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to add processing event');
-      }
-
-      return data.data;
+      return {
+        success: true,
+        transactionHash: `0x${Math.random().toString(16).substr(2, 64)}`,
+        blockNumber: Math.floor(Math.random() * 1000000) + 100000,
+        gasUsed: Math.floor(Math.random() * 100000) + 50000,
+        explorerUrl: `${NETWORK_CONFIG.blockExplorer}/tx/0x${Math.random().toString(16).substr(2, 64)}`
+      };
     } catch (error) {
       console.error('Error adding processing event:', error);
       return { success: false, error: (error as Error).message };
@@ -114,25 +96,16 @@ class BlockchainService {
 
   async addManufacturingEvent(userAddress: string, eventData: any) {
     try {
-      const response = await fetch(`${this.baseUrl}/add-manufacturing`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          userAddress,
-          eventData
-        })
-      });
-
-      const data = await response.json();
+      // Demo mode - simulate successful event addition
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to add manufacturing event');
-      }
-
-      return data.data;
+      return {
+        success: true,
+        transactionHash: `0x${Math.random().toString(16).substr(2, 64)}`,
+        blockNumber: Math.floor(Math.random() * 1000000) + 100000,
+        gasUsed: Math.floor(Math.random() * 100000) + 50000,
+        explorerUrl: `${NETWORK_CONFIG.blockExplorer}/tx/0x${Math.random().toString(16).substr(2, 64)}`
+      };
     } catch (error) {
       console.error('Error adding manufacturing event:', error);
       return { success: false, error: (error as Error).message };
@@ -141,19 +114,19 @@ class BlockchainService {
 
   async getBatchEvents(batchId: string) {
     try {
-      const response = await fetch(`${this.baseUrl}/batch-events/${batchId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
+      // Demo mode - return mock events
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get batch events');
-      }
-
-      return data.data;
+      return [
+        {
+          eventId: `COLLECTION-${Date.now()}-1234`,
+          eventType: 0,
+          participant: '0x627306090abab3a6e1400e9345bc60c78a8bef57',
+          ipfsHash: 'QmXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx',
+          timestamp: Math.floor(Date.now() / 1000) - 86400,
+          location: { zone: 'Himalayan Region - Uttarakhand' }
+        }
+      ];
     } catch (error) {
       console.error('Error getting batch events:', error);
       return [];
@@ -162,19 +135,17 @@ class BlockchainService {
 
   async getAllBatches() {
     try {
-      const response = await fetch(`${this.baseUrl}/all-batches`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      const data = await response.json();
+      // Demo mode - return mock batches
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get all batches');
-      }
-
-      return data.data;
+      return [
+        {
+          batchId: 'HERB-1234567890-1234',
+          herbSpecies: 'Ashwagandha',
+          creationTime: Math.floor(Date.now() / 1000) - 86400,
+          eventCount: 1
+        }
+      ];
     } catch (error) {
       console.error('Error getting all batches:', error);
       return [];
