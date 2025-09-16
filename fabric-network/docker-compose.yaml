@@ -14,6 +14,7 @@ services:
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_PORT=7054
       - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17054
+      - FABRIC_LOGGING_SPEC=INFO
     ports:
       - "7054:7054"
       - "17054:17054"
@@ -98,6 +99,10 @@ services:
       - CORE_PEER_BCCSP_SW_HASH=SHA2
       - CORE_PEER_BCCSP_SW_SECURITY=256
       - CORE_PEER_BCCSP_SW_FILEKEYSTORE_KEYSTORE=/etc/hyperledger/fabric/msp/keystore
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
     volumes:
       - ./config:/etc/hyperledger/peercfg
       - ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com:/etc/hyperledger/fabric
