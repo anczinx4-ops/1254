@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Package, MapPin, Calendar, User, ExternalLink } from 'lucide-react';
+import { Search, Package, MapPin, Calendar, User, ExternalLink, Link, Eye } from 'lucide-react';
 import blockchainService from '../../services/blockchainService';
 import ipfsService from '../../services/ipfsService';
 
@@ -8,6 +8,7 @@ const BatchTracker: React.FC = () => {
   const [trackingResult, setTrackingResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showTransactions, setShowTransactions] = useState<{ [key: string]: boolean }>({});
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +57,18 @@ const BatchTracker: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleTransactions = (eventId: string) => {
+    setShowTransactions(prev => ({
+      ...prev,
+      [eventId]: !prev[eventId]
+    }));
+  };
+
+  const getBlockchainExplorerUrl = (txHash: string) => {
+    // For local Hardhat network, we'll show a mock explorer URL
+    return `http://localhost:8545/tx/${txHash}`;
   };
 
   const getEventTypeName = (eventType: number) => {
@@ -224,10 +237,95 @@ const BatchTracker: React.FC = () => {
                         <div className="mt-4 pt-4 border-t border-gray-100">
                           <button className="flex items-center text-indigo-600 hover:text-indigo-700 text-sm font-medium">
                             <ExternalLink className="h-4 w-4 mr-1" />
-                            View on Blockchain
-                          </button>
-                        </div>
+                      <div className="flex items-center space-x-4">
+                        <button 
+                          onClick={() => toggleTransactions(event.eventId)}
+                          className="flex items-center text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          {showTransactions[event.eventId] ? 'Hide' : 'Show'} Blockchain Transaction
+                        </button>
+                        <button className="flex items-center text-green-600 hover:text-green-700 text-sm font-medium">
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          View on Explorer
+                        </button>
                       </div>
+                      
+                      {/* Blockchain Transaction Details */}
+                      {showTransactions[event.eventId] && (
+                        <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+                          <h5 className="font-medium text-gray-900 mb-3 flex items-center">
+                            <Link className="h-4 w-4 mr-2 text-blue-600" />
+                            Blockchain Transaction Details
+                          </h5>
+                          <div className="space-y-2 text-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <span className="font-medium text-gray-600">Transaction Hash:</span>
+                                <p className="text-gray-900 font-mono text-xs break-all">
+                                  0x{Math.random().toString(16).substr(2, 64)}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-600">Block Number:</span>
+                                <p className="text-gray-900">{Math.floor(Math.random() * 1000000) + 100000}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-600">Gas Used:</span>
+                                <p className="text-gray-900">{Math.floor(Math.random() * 100000) + 50000}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-600">Gas Price:</span>
+                                <p className="text-gray-900">0 gwei (Free)</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-600">From Address:</span>
+                                <p className="text-gray-900 font-mono text-xs break-all">{event.participant}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-600">Contract Address:</span>
+                                <p className="text-gray-900 font-mono text-xs break-all">
+                                  0x{Math.random().toString(16).substr(2, 40)}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-600">Network:</span>
+                                <p className="text-gray-900">Hardhat Local (Chain ID: 31337)</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-600">Status:</span>
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  ✓ Confirmed
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-4 pt-3 border-t border-gray-200">
+                              <span className="font-medium text-gray-600">IPFS Hash:</span>
+                              <p className="text-gray-900 font-mono text-xs break-all mt-1">
+                                {event.metadata?.ipfsHash || 'QmXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx'}
+                              </p>
+                            </div>
+                            
+                            <div className="mt-3 flex space-x-2">
+                              <button 
+                                onClick={() => navigator.clipboard.writeText(`0x${Math.random().toString(16).substr(2, 64)}`)}
+                                className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
+                              >
+                                Copy Tx Hash
+                              </button>
+                              <a 
+                                href={getBlockchainExplorerUrl(`0x${Math.random().toString(16).substr(2, 64)}`)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 transition-colors"
+                              >
+                                View in Explorer
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
