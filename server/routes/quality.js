@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { authenticateToken, users } = require('./auth');
-const blockchainService = require('../services/blockchainService');
+const fabricService = require('../services/fabricService');
 const ipfsService = require('../services/ipfsService');
 const qrService = require('../services/qrService');
 const smsService = require('../services/smsService');
@@ -46,7 +46,7 @@ router.post('/test', authenticateToken, upload.single('image'), async (req, res)
       });
     }
 
-    const testEventId = blockchainService.generateEventId('QUALITY_TEST');
+    const testEventId = fabricService.generateEventId('QUALITY_TEST');
 
     let imageHash = null;
     if (req.file) {
@@ -100,29 +100,24 @@ router.post('/test', authenticateToken, upload.single('image'), async (req, res)
     }
 
     // Add event to blockchain
-    const eventData = {
+    const fabricResult = await fabricService.createQualityTestEvent(
       batchId,
-      eventId: testEventId,
       parentEventId,
-      ipfsHash: metadataUpload.ipfsHash,
-      location: {
-        latitude: '0', // Quality tests don't require specific location
-        longitude: '0',
-        zone: 'Laboratory'
-      },
-      qrCodeHash: qrResult.qrHash
-    };
-
-    const blockchainResult = await blockchainService.addQualityTestEvent(
-      req.user.address,
-      user.privateKey,
-      eventData
+      user.name,
+      parseFloat(moistureContent),
+      parseFloat(purity),
+      parseFloat(pesticideLevel),
+      testMethod,
+      notes,
+      metadataUpload.ipfsHash,
+      qrResult.qrHash
     );
 
-    if (!blockchainResult.success) {
+    if (!fabricResult.success) {
       return res.status(500).json({
         success: false,
-        error: 'Failed to add quality test to blockchain'
+        error: 'Failed to add quality test to Fabric network',
+        details: fabricResult.error
       });
     }
 
@@ -153,7 +148,7 @@ router.post('/test', authenticateToken, upload.single('image'), async (req, res)
           dataURL: qrResult.dataURL,
           trackingUrl: qrResult.trackingUrl
         },
-        blockchain: blockchainResult
+        fabric: fabricResult
       }
     });
   } catch (error) {

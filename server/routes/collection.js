@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { authenticateToken, users } = require('./auth');
-const blockchainService = require('../services/blockchainService');
+const fabricService = require('../services/fabricService');
 const ipfsService = require('../services/ipfsService');
 const qrService = require('../services/qrService');
 const geolocationService = require('../services/geolocationService');
@@ -101,8 +101,8 @@ router.post('/create', authenticateToken, upload.single('image'), async (req, re
     }
 
     // Generate batch and event IDs
-    const batchId = blockchainService.generateBatchId();
-    const collectionEventId = blockchainService.generateEventId('COLLECTION');
+    const batchId = fabricService.generateBatchId();
+    const collectionEventId = fabricService.generateEventId('COLLECTION');
 
     let imageHash = null;
     if (req.file) {
@@ -169,30 +169,24 @@ router.post('/create', authenticateToken, upload.single('image'), async (req, re
     }
 
     // Create batch on blockchain
-    const blockchainData = {
+    const fabricResult = await fabricService.createCollectionEvent(
       batchId,
       herbSpecies,
-      collectionEventId,
-      ipfsHash: metadataUpload.ipfsHash,
-      location: {
-        latitude,
-        longitude,
-        zone
-      },
-      qrCodeHash: qrResult.qrHash
-    };
-
-    const blockchainResult = await blockchainService.createBatch(
-      req.user.address,
-      user.privateKey,
-      blockchainData
+      user.name,
+      parseFloat(weight),
+      harvestDate || new Date().toISOString().split('T')[0],
+      { latitude, longitude, zone },
+      qualityGrade || '',
+      notes || '',
+      metadataUpload.ipfsHash,
+      qrResult.qrHash
     );
 
-    if (!blockchainResult.success) {
+    if (!fabricResult.success) {
       return res.status(500).json({
         success: false,
-        error: 'Failed to create batch on blockchain',
-        details: blockchainResult.error
+        error: 'Failed to create batch on Fabric network',
+        details: fabricResult.error
       });
     }
 
@@ -220,7 +214,7 @@ router.post('/create', authenticateToken, upload.single('image'), async (req, re
           dataURL: qrResult.dataURL,
           trackingUrl: qrResult.trackingUrl
         },
-        blockchain: blockchainResult
+        fabric: fabricResult
       }
     });
   } catch (error) {
@@ -268,8 +262,8 @@ router.post('/sms-collect', async (req, res) => {
     // This would require a separate SMS user registry or pre-registered phone numbers
     
     // Generate batch and event IDs
-    const batchId = blockchainService.generateBatchId();
-    const collectionEventId = blockchainService.generateEventId('COLLECTION');
+    const batchId = fabricService.generateBatchId();
+    const collectionEventId = fabricService.generateEventId('COLLECTION');
 
     // Create basic collection metadata (no image for SMS)
     const collectionData = {

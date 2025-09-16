@@ -1,11 +1,11 @@
-# 🌿 HerbionYX - Blockchain-Based Ayurvedic Herb Traceability System
+# 🌿 HerbionYX - Hyperledger Fabric-Based Ayurvedic Herb Traceability System
 
-A comprehensive blockchain-based traceability system for Ayurvedic herbs using Polygon Mumbai, Remix IDE, and real QR code generation.
+A comprehensive Hyperledger Fabric-based traceability system for Ayurvedic herbs with enterprise-grade blockchain technology and real QR code generation.
 
 ## 🚀 Features
 
 ### Core Functionality
-- **Real Blockchain**: Polygon Mumbai testnet with real transactions
+- **Enterprise Blockchain**: Hyperledger Fabric with permissioned network
 - **Demo Mode**: No backend required, works entirely in browser
 - **Role-Based Access**: Collector, Tester, Processor, Manufacturer, Admin roles
 - **QR-Based Workflow**: Each process starts with QR code scanning
@@ -14,44 +14,69 @@ A comprehensive blockchain-based traceability system for Ayurvedic herbs using P
 - **Glass Morphism UI**: Modern, beautiful interface design
 - **140 Herb Species**: Complete Ayurvedic herb database
 
-### Smart Contracts
-- **HerbionYXAccessControl.sol**: Role management and permissions
-- **HerbionYXBatchRegistry.sol**: Complete supply chain event recording
+### Chaincode (Smart Contracts)
+- **HerbionYXContract**: Complete supply chain event recording in Node.js
+- **Role-Based Permissions**: Built-in access control
+- **Event Tracking**: Collection, Quality Test, Processing, Manufacturing events
 
 ### Technology Stack
 - **Frontend**: React + TypeScript + Tailwind CSS
-- **Blockchain**: Polygon Mumbai Testnet
-- **Deployment**: Remix IDE
+- **Blockchain**: Hyperledger Fabric 2.5
+- **Chaincode**: Node.js
+- **Database**: CouchDB (for rich queries)
+- **Deployment**: Docker Compose
 - **QR Codes**: Real QR code generation with tracking
 
 ## 🏗️ Architecture
 
 ```
 Frontend (React + Vite)     →    Browser-based Demo
-Smart Contracts             →    Polygon Mumbai Testnet  
-Deployment                  →    Remix IDE
+Chaincode (Node.js)         →    Hyperledger Fabric Network
+Backend API                 →    Fabric Node.js SDK
+Deployment                  →    Docker Compose
 ```
 
 ## 📋 Prerequisites
 
 - Node.js 18+
-- MetaMask wallet
-- Test MATIC tokens (free from faucet)
+- Docker and Docker Compose
+- Hyperledger Fabric binaries
+- 8GB+ RAM recommended
 
 ## 🛠️ Quick Setup Guide
 
-### 1. Install Dependencies
+### 1. Install Prerequisites
 ```bash
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Install Hyperledger Fabric binaries
+curl -sSL https://bit.ly/2ysbOFE | bash -s -- 2.5.4 1.5.7
+
+# Install project dependencies
 npm install
+cd server && npm install
 ```
 
-### 2. Start Development Server
+### 2. Start Fabric Network
 ```bash
+cd fabric-network/scripts
+chmod +x *.sh
+./network.sh up
+./network.sh createChannel
+./network.sh deployCC
+```
+
+### 3. Start Backend and Frontend
+```bash
+# Terminal 1: Start backend
+cd server
+npm run dev
+
+# Terminal 2: Start frontend
 npm run dev
 ```
-
-### 3. Deploy Contracts (Optional)
-Follow the `REMIX_DEPLOYMENT_GUIDE.md` to deploy contracts on Polygon Mumbai.
 
 ## 🎯 User Workflow
 
@@ -76,26 +101,26 @@ The system supports multiple users with different roles:
 1. Login as collector
 2. Fill herb details (species, weight, location)
 3. Upload herb image (optional)
-4. Submit → Creates batch on blockchain
+4. Submit → Creates batch on Fabric network
 5. **Real QR code generated** with tracking URL
 #### Quality Testing
 1. Login as tester
 2. **Scan/paste QR code** from collection
 3. Auto-fills batch and parent event IDs
 4. Enter test results (moisture, purity, pesticide levels)
-5. Submit → Records on blockchain
+5. Submit → Records on Fabric network
 6. **New QR code generated**
 #### Processing
 1. Login as processor
 2. **Scan/paste QR code** from quality test
 3. Select processing method and parameters
-4. Submit → Records on blockchain
+4. Submit → Records on Fabric network
 5. **New QR code generated**
 #### Manufacturing
 1. Login as manufacturer
 2. **Scan/paste QR code** from processing
 3. Enter final product details
-4. Submit → Records on blockchain
+4. Submit → Records on Fabric network
 5. **Final consumer QR code generated**
 #### Consumer Verification
 1. Login as consumer (or public access)
@@ -108,7 +133,7 @@ The system supports multiple users with different roles:
 ### Demo Mode Features
 - **Browser-Only**: No backend server required
 - **Mock Authentication**: Demo users with different roles
-- **Simulated Blockchain**: Real contract structure, demo transactions
+- **Simulated Fabric**: Real chaincode structure, demo transactions
 - **Real QR Codes**: Actual QR code generation and scanning
 - **Responsive UI**: Works on all device sizes
 
@@ -116,7 +141,7 @@ The system supports multiple users with different roles:
 - **Multiple User Roles**: Switch between different user types
 - **Glass Morphism**: Modern, translucent design elements
 - **Responsive**: Works on all device sizes
-- **Real-time**: Live blockchain interaction
+- **Real-time**: Live Fabric network interaction
 - **Error Handling**: Comprehensive error messages
 
 ## 🌿 Supported Herbs (140 Species)
@@ -135,24 +160,25 @@ Talispatra, Chirmati, Katha, Vatsnabh, Atees, Vach, Adusa, Bael, Shirish, Ghritk
 
 ## 🚀 Production Deployment
 
-### Contract Deployment
-1. **Follow REMIX_DEPLOYMENT_GUIDE.md** for detailed instructions
-2. **Deploy to Polygon Mumbai** using Remix IDE
-3. **Update contract addresses** in `src/config/contracts.ts`
-4. **Register demo users** via Remix interface
+### Fabric Network Deployment
+1. **Follow FABRIC_SETUP_GUIDE.md** for detailed instructions
+2. **Deploy Fabric network** using Docker Compose
+3. **Deploy chaincode** using Fabric CLI
+4. **Configure connection profiles** in backend
 
 ### Frontend Deployment
 1. **Build**: `npm run build`
 2. **Deploy**: Upload `dist` folder to any static hosting
-3. **Configure**: Update contract addresses after deployment
+3. **Configure**: Update Fabric endpoints after deployment
 
 ## 🔐 Security Features
 
-- **Role-based Access Control**: Smart contract enforced permissions  
+- **Role-based Access Control**: Chaincode enforced permissions  
 - **Demo Authentication**: Secure demo user system
-- **Blockchain Immutability**: Permanent record keeping
+- **Fabric Immutability**: Permanent record keeping with consensus
 - **QR Code Verification**: Cryptographic hash verification
 - **Input Validation**: Comprehensive form validation
+- **Permissioned Network**: Only authorized participants can join
 
 ## 🤝 Contributing
 
@@ -166,8 +192,8 @@ This is a demo system ready for production enhancement. To contribute:
 ## 📞 Support
 
 For technical support:
-- Review the `REMIX_DEPLOYMENT_GUIDE.md`
-- Check contract deployment on Polygon Mumbai
+- Review the `FABRIC_SETUP_GUIDE.md`
+- Check chaincode deployment on Fabric network
 - Test with demo credentials provided
 - Verify QR code generation and scanning
 
@@ -178,24 +204,34 @@ MIT License - Open source and free to use for educational and commercial purpose
 ## 👥 Credits
 
 **Built by SENTINELS Team**
-- Revolutionary blockchain-based traceability
+- Revolutionary Hyperledger Fabric-based traceability
 - Production-ready architecture
 - Modern UI/UX design
 - Comprehensive documentation
 
-**🌱 Revolutionizing Ayurvedic Supply Chain with Blockchain Technology**
+**🌱 Revolutionizing Ayurvedic Supply Chain with Hyperledger Fabric**
 
 ## 🎯 Quick Start Commands
 
 ```bash
-# Install and start
+# Install dependencies
 npm install
+cd server && npm install
+
+# Start Fabric network
+cd ../fabric-network/scripts
+./network.sh up
+./network.sh createChannel  
+./network.sh deployCC
+
+# Start backend (new terminal)
+cd ../../server
 npm run dev
-
-# Deploy contracts (optional)
-# Follow REMIX_DEPLOYMENT_GUIDE.md
-
-# Access at http://localhost:5173
 ```
 
+# Start frontend (new terminal)  
+cd ..
+npm run dev
+
+# Access at http://localhost:5173
 **Demo Login**: Use the provided demo credentials to test different user roles!

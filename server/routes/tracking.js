@@ -1,5 +1,5 @@
 const express = require('express');
-const blockchainService = require('../services/blockchainService');
+const fabricService = require('../services/fabricService');
 const ipfsService = require('../services/ipfsService');
 const { users } = require('./auth');
 
@@ -18,13 +18,21 @@ router.get('/batch/:eventId', async (req, res) => {
     }
 
     // Get all batches to find the one containing this event
-    const batches = await blockchainService.getAllBatches();
+    const batchesResult = await fabricService.getAllBatches();
+    if (!batchesResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get batches from Fabric network'
+      });
+    }
+    
+    const batches = batchesResult.data;
     let targetBatch = null;
 
     for (const batch of batches) {
-      const events = await blockchainService.getBatchEvents(batch.batchId);
-      if (events.find(event => event.eventId === eventId)) {
-        targetBatch = batch;
+      const eventsResult = await fabricService.getBatchEvents(batch.Record.batchId);
+      if (eventsResult.success && eventsResult.data.find(event => event.eventId === eventId)) {
+        targetBatch = batch.Record;
         break;
       }
     }
@@ -37,7 +45,15 @@ router.get('/batch/:eventId', async (req, res) => {
     }
 
     // Get all events for the batch
-    const batchEvents = await blockchainService.getBatchEvents(targetBatch.batchId);
+    const eventsResult = await fabricService.getBatchEvents(targetBatch.batchId);
+    if (!eventsResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get batch events from Fabric network'
+      });
+    }
+    
+    const batchEvents = eventsResult.data;
     
     // Enhance events with IPFS metadata and user information
     const enhancedEvents = await Promise.all(
@@ -95,15 +111,25 @@ router.get('/path/:eventId', async (req, res) => {
     const { eventId } = req.params;
 
     // Get all batches to find the target event
-    const batches = await blockchainService.getAllBatches();
+    const batchesResult = await fabricService.getAllBatches();
+    if (!batchesResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get batches from Fabric network'
+      });
+    }
+    
+    const batches = batchesResult.data;
     let targetBatch = null;
     let targetEvent = null;
 
     for (const batch of batches) {
-      const events = await blockchainService.getBatchEvents(batch.batchId);
-      const foundEvent = events.find(event => event.eventId === eventId);
+      const eventsResult = await fabricService.getBatchEvents(batch.Record.batchId);
+      if (!eventsResult.success) continue;
+      
+      const foundEvent = eventsResult.data.find(event => event.eventId === eventId);
       if (foundEvent) {
-        targetBatch = batch;
+        targetBatch = batch.Record;
         targetEvent = foundEvent;
         break;
       }
@@ -117,7 +143,15 @@ router.get('/path/:eventId', async (req, res) => {
     }
 
     // Get all events for the batch
-    const allEvents = await blockchainService.getBatchEvents(targetBatch.batchId);
+    const eventsResult = await fabricService.getBatchEvents(targetBatch.batchId);
+    if (!eventsResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get batch events from Fabric network'
+      });
+    }
+    
+    const allEvents = eventsResult.data;
     
     // Find the path from collection to target event
     const path = findEventPath(allEvents, eventId);
@@ -175,9 +209,16 @@ router.get('/stats/:batchId', async (req, res) => {
   try {
     const { batchId } = req.params;
 
-    const events = await blockchainService.getBatchEvents(batchId);
+    const eventsResult = await fabricService.getBatchEvents(batchId);
+    if (!eventsResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get batch events from Fabric network'
+      });
+    }
     
-    if (events.length === 0) {
+    const events = eventsResult.data;
+    if (!events || events.length === 0) {
       return res.status(404).json({
         success: false,
         error: 'Batch not found'
@@ -226,18 +267,26 @@ router.get('/stats/:batchId', async (req, res) => {
 // Get all active batches (admin endpoint)
 router.get('/batches', async (req, res) => {
   try {
-    const batches = await blockchainService.getAllBatches();
+    const batchesResult = await fabricService.getAllBatches();
+    if (!batchesResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get batches from Fabric network'
+      });
+    }
     
+    const batches = batchesResult.data;
     // Enhance with basic event statistics
     const enhancedBatches = await Promise.all(
       batches.map(async (batch) => {
-        const events = await blockchainService.getBatchEvents(batch.batchId);
+        const eventsResult = await fabricService.getBatchEvents(batch.Record.batchId);
+        const events = eventsResult.success ? eventsResult.data : [];
         
         return {
-          ...batch,
+          ...batch.Record,
           eventCount: events.length,
-          lastUpdated: Math.max(...events.map(event => event.timestamp)),
-          participants: [...new Set(events.map(event => event.participant))].length
+          lastUpdated: events.length > 0 ? Math.max(...events.map(event => new Date(event.timestamp).getTime())) : 0,
+          participants: [...new Set(events.map(event => event.participantName || event.collectorName || event.testerName || event.processorName || event.manufacturerName))].length
         };
       })
     );

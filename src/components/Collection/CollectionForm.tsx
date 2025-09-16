@@ -175,7 +175,7 @@ const CollectionForm: React.FC = () => {
         weight: parseFloat(formData.weight),
         location: { zone: formData.zone },
         qr: qrResult,
-        blockchain: blockchainResult
+        fabric: fabricResult
       });
 
       // Reset form

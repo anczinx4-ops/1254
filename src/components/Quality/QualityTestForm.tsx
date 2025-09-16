@@ -139,7 +139,7 @@ const QualityTestForm: React.FC = () => {
           pesticideLevel: parseFloat(formData.pesticideLevel)
         },
         qr: qrResult,
-        blockchain: blockchainResult
+        fabric: fabricResult
       });
       
       // Reset form

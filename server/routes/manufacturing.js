@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { authenticateToken, users } = require('./auth');
-const blockchainService = require('../services/blockchainService');
+const fabricService = require('../services/fabricService');
 const ipfsService = require('../services/ipfsService');
 const qrService = require('../services/qrService');
 const smsService = require('../services/smsService');
@@ -47,7 +47,7 @@ router.post('/manufacture', authenticateToken, upload.single('image'), async (re
       });
     }
 
-    const mfgEventId = blockchainService.generateEventId('MANUFACTURING');
+    const mfgEventId = fabricService.generateEventId('MANUFACTURING');
 
     let imageHash = null;
     if (req.file) {
@@ -113,29 +113,25 @@ router.post('/manufacture', authenticateToken, upload.single('image'), async (re
     }
 
     // Add event to blockchain
-    const eventData = {
+    const fabricResult = await fabricService.createManufacturingEvent(
       batchId,
-      eventId: mfgEventId,
       parentEventId,
-      ipfsHash: metadataUpload.ipfsHash,
-      location: {
-        latitude: '0',
-        longitude: '0',
-        zone: 'Manufacturing Facility'
-      },
-      qrCodeHash: qrResult.qrHash
-    };
-
-    const blockchainResult = await blockchainService.addManufacturingEvent(
-      req.user.address,
-      user.privateKey,
-      eventData
+      user.name,
+      productName,
+      productType || 'Herbal Product',
+      parseFloat(quantity),
+      unit || 'units',
+      expiryDate || '',
+      notes || '',
+      metadataUpload.ipfsHash,
+      qrResult.qrHash
     );
 
-    if (!blockchainResult.success) {
+    if (!fabricResult.success) {
       return res.status(500).json({
         success: false,
-        error: 'Failed to add manufacturing event to blockchain'
+        error: 'Failed to add manufacturing event to Fabric network',
+        details: fabricResult.error
       });
     }
 
@@ -167,7 +163,7 @@ router.post('/manufacture', authenticateToken, upload.single('image'), async (re
           dataURL: qrResult.dataURL,
           trackingUrl: qrResult.trackingUrl
         },
-        blockchain: blockchainResult
+        fabric: fabricResult
       }
     });
   } catch (error) {

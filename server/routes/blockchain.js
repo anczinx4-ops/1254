@@ -1,23 +1,23 @@
 const express = require('express');
 const { authenticateToken, users } = require('./auth');
-const realBlockchainService = require('../services/realBlockchainService');
+const fabricService = require('../services/fabricService');
 
 const router = express.Router();
 
-// Initialize blockchain service
+// Initialize Fabric service
 router.post('/initialize', async (req, res) => {
   try {
-    const result = await realBlockchainService.init();
+    const result = await fabricService.connect();
     res.json({
       success: true,
-      message: 'Real blockchain service initialized on Polygon Mumbai',
+      message: 'Fabric service connected successfully',
       result
     });
   } catch (error) {
-    console.error('Blockchain initialization error:', error);
+    console.error('Fabric initialization error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to initialize blockchain service',
+      error: 'Failed to initialize Fabric service',
       details: error.message
     });
   }
@@ -44,12 +44,23 @@ router.post('/create-batch', authenticateToken, async (req, res) => {
       });
     }
 
-    const result = await realBlockchainService.createBatch(userAddress, user.role, batchData);
+    const result = await fabricService.createCollectionEvent(
+      batchData.batchId,
+      batchData.herbSpecies,
+      user.name,
+      batchData.weight || 0,
+      batchData.harvestDate || new Date().toISOString().split('T')[0],
+      batchData.location || {},
+      batchData.qualityGrade || '',
+      batchData.notes || '',
+      batchData.ipfsHash || '',
+      batchData.qrCodeHash || ''
+    );
     
     res.json({
       success: result.success,
       data: result,
-      message: result.success ? 'Batch created successfully on Polygon Mumbai' : 'Failed to create batch'
+      message: result.success ? 'Batch created successfully on Fabric network' : 'Failed to create batch'
     });
   } catch (error) {
     console.error('Create batch error:', error);
@@ -81,7 +92,18 @@ router.post('/add-quality-test', authenticateToken, async (req, res) => {
       });
     }
 
-    const result = await realBlockchainService.addEvent(userAddress, user.role, eventData, 1); // Quality test = 1
+    const result = await fabricService.createQualityTestEvent(
+      eventData.batchId,
+      eventData.parentEventId,
+      user.name,
+      eventData.moistureContent || 0,
+      eventData.purity || 0,
+      eventData.pesticideLevel || 0,
+      eventData.testMethod || 'Standard Test',
+      eventData.notes || '',
+      eventData.ipfsHash || '',
+      eventData.qrCodeHash || ''
+    );
     
     res.json({
       success: result.success,
@@ -118,7 +140,18 @@ router.post('/add-processing', authenticateToken, async (req, res) => {
       });
     }
 
-    const result = await realBlockchainService.addEvent(userAddress, user.role, eventData, 2); // Processing = 2
+    const result = await fabricService.createProcessingEvent(
+      eventData.batchId,
+      eventData.parentEventId,
+      user.name,
+      eventData.method || 'Standard Processing',
+      eventData.temperature || null,
+      eventData.duration || '',
+      eventData.yield || 0,
+      eventData.notes || '',
+      eventData.ipfsHash || '',
+      eventData.qrCodeHash || ''
+    );
     
     res.json({
       success: result.success,
@@ -155,7 +188,19 @@ router.post('/add-manufacturing', authenticateToken, async (req, res) => {
       });
     }
 
-    const result = await realBlockchainService.addEvent(userAddress, user.role, eventData, 3); // Manufacturing = 3
+    const result = await fabricService.createManufacturingEvent(
+      eventData.batchId,
+      eventData.parentEventId,
+      user.name,
+      eventData.productName || 'Herbal Product',
+      eventData.productType || 'Capsules',
+      eventData.quantity || 0,
+      eventData.unit || 'units',
+      eventData.expiryDate || '',
+      eventData.notes || '',
+      eventData.ipfsHash || '',
+      eventData.qrCodeHash || ''
+    );
     
     res.json({
       success: result.success,
@@ -172,57 +217,10 @@ router.post('/add-manufacturing', authenticateToken, async (req, res) => {
   }
 });
 
-// Get batch events
-router.get('/batch-events/:batchId', async (req, res) => {
-  try {
-    const { batchId } = req.params;
-    
-    if (!batchId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Batch ID is required'
-      });
-    }
-
-    const events = await realBlockchainService.getBatchEvents(batchId);
-    
-    res.json({
-      success: true,
-      data: events
-    });
-  } catch (error) {
-    console.error('Get batch events error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get batch events',
-      details: error.message
-    });
-  }
-});
-
-// Get all batches
-router.get('/all-batches', async (req, res) => {
-  try {
-    const batches = await realBlockchainService.getAllBatches();
-    
-    res.json({
-      success: true,
-      data: batches
-    });
-  } catch (error) {
-    console.error('Get all batches error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to get all batches',
-      details: error.message
-    });
-  }
-});
-
 // Generate batch ID
 router.get('/generate-batch-id', (req, res) => {
   try {
-    const batchId = realBlockchainService.generateBatchId();
+    const batchId = fabricService.generateBatchId();
     
     res.json({
       success: true,
@@ -250,7 +248,7 @@ router.post('/generate-event-id', (req, res) => {
       });
     }
 
-    const eventId = realBlockchainService.generateEventId(eventType);
+    const eventId = fabricService.generateEventId(eventType);
     
     res.json({
       success: true,

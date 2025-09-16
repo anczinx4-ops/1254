@@ -142,7 +142,7 @@ const ProcessingForm: React.FC = () => {
           duration: formData.duration
         },
         qr: qrResult,
-        blockchain: blockchainResult
+        fabric: fabricResult
       });
       
       // Reset form

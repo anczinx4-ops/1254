@@ -41,7 +41,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
             <div className="mb-16">
               <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-full px-6 py-3 border border-white/20 mb-8">
                 <Shield className="h-5 w-5 text-green-300" />
-                <span className="text-white font-medium">Blockchain-Powered Authenticity</span>
+                <span className="text-white font-medium">Fabric-Powered Authenticity</span>
               </div>
               
               <h1 className="text-6xl md:text-8xl font-bold text-white mb-6 leading-tight">
@@ -49,7 +49,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
               </h1>
               
               <p className="text-xl md:text-2xl text-green-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-                Revolutionary blockchain-based traceability system for Ayurvedic herbs. 
+                Revolutionary Hyperledger Fabric-based traceability system for Ayurvedic herbs. 
                 From farm to pharmacy, ensure authenticity and quality at every step.
               </p>
 
@@ -69,7 +69,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                   <Leaf className="h-8 w-8 text-green-300" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-4">Complete Traceability</h3>
-                <p className="text-green-100">Track herbs from collection to final product with immutable blockchain records</p>
+                <p className="text-green-100">Track herbs from collection to final product with immutable Fabric ledger records</p>
               </div>
 
               <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:bg-white/15 transition-all duration-300">
@@ -97,7 +97,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                   <CheckCircle className="h-6 w-6 text-green-400 mt-1 flex-shrink-0" />
                   <div>
                     <h4 className="font-semibold text-white mb-1">Zero Gas Fees</h4>
-                    <p className="text-green-100 text-sm">Free blockchain transactions for all users</p>
+                    <p className="text-green-100 text-sm">Enterprise Fabric network with no transaction fees</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3">
@@ -134,7 +134,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
                 Built with ❤️ by <span className="font-bold text-white">SENTINELS</span>
               </p>
               <p className="text-green-200 text-sm">
-                Revolutionizing Ayurvedic supply chain transparency through blockchain technology
+                Revolutionizing Ayurvedic supply chain transparency through Hyperledger Fabric
               </p>
             </div>
           </div>

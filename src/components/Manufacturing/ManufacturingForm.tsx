@@ -167,7 +167,7 @@ const ManufacturingForm: React.FC = () => {
           expiryDate: formData.expiryDate
         },
         qr: qrResult,
-        blockchain: blockchainResult
+        fabric: fabricResult
       });
       
       // Reset form

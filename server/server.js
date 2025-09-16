@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const path = require('path');
+const fabricService = require('./services/fabricService');
 
 // Load environment variables
 dotenv.config();
@@ -145,6 +146,15 @@ app.listen(PORT, () => {
   console.log(`🌿 HerbionYX API Server running on port ${PORT}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Initialize Fabric connection
+  fabricService.connect().then(success => {
+    if (success) {
+      console.log('🔗 Connected to Hyperledger Fabric network');
+    } else {
+      console.log('❌ Failed to connect to Hyperledger Fabric network');
+    }
+  });
 });
 
 module.exports = app;

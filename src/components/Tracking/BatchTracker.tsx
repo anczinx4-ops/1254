@@ -242,54 +242,50 @@ const BatchTracker: React.FC = () => {
                               className="flex items-center text-indigo-600 hover:text-indigo-700 text-sm font-medium"
                             >
                               <Eye className="h-4 w-4 mr-1" />
-                              {showTransactions[event.eventId] ? 'Hide' : 'Show'} Blockchain Transaction
+                              {showTransactions[event.eventId] ? 'Hide' : 'Show'} Fabric Transaction
                             </button>
                             <button className="flex items-center text-green-600 hover:text-green-700 text-sm font-medium">
                               <ExternalLink className="h-4 w-4 mr-1" />
-                              View on Explorer
+                              View Transaction
                             </button>
                           </div>
                           
-                          {/* Blockchain Transaction Details */}
+                          {/* Fabric Transaction Details */}
                           {showTransactions[event.eventId] && (
                             <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
                               <h5 className="font-medium text-gray-900 mb-3 flex items-center">
                                 <Link className="h-4 w-4 mr-2 text-blue-600" />
-                                Blockchain Transaction Details
+                                Fabric Transaction Details
                               </h5>
                               <div className="space-y-2 text-sm">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div>
-                                    <span className="font-medium text-gray-600">Transaction Hash:</span>
-                                    <p className="text-gray-900 font-mono text-xs break-all">
-                                      0x{Math.random().toString(16).substr(2, 64)}
-                                    </p>
+                                    <span className="font-medium text-gray-600">Transaction ID:</span>
+                                    <p className="text-gray-900 font-mono text-xs break-all">tx_{Math.random().toString(36).substr(2, 16)}</p>
                                   </div>
                                   <div>
                                     <span className="font-medium text-gray-600">Block Number:</span>
                                     <p className="text-gray-900">{Math.floor(Math.random() * 1000000) + 100000}</p>
                                   </div>
                                   <div>
-                                    <span className="font-medium text-gray-600">Gas Used:</span>
-                                    <p className="text-gray-900">{Math.floor(Math.random() * 100000) + 50000}</p>
+                                    <span className="font-medium text-gray-600">Endorsing Peers:</span>
+                                    <p className="text-gray-900">peer0.org1.herbionyx.com</p>
                                   </div>
                                   <div>
-                                    <span className="font-medium text-gray-600">Gas Price:</span>
-                                    <p className="text-gray-900">0 gwei (Free)</p>
+                                    <span className="font-medium text-gray-600">Channel:</span>
+                                    <p className="text-gray-900">herbionyx-channel</p>
                                   </div>
                                   <div>
-                                    <span className="font-medium text-gray-600">From Address:</span>
-                                    <p className="text-gray-900 font-mono text-xs break-all">{event.participant}</p>
+                                    <span className="font-medium text-gray-600">Chaincode:</span>
+                                    <p className="text-gray-900">herbionyx-chaincode</p>
                                   </div>
                                   <div>
-                                    <span className="font-medium text-gray-600">Contract Address:</span>
-                                    <p className="text-gray-900 font-mono text-xs break-all">
-                                      0x{Math.random().toString(16).substr(2, 40)}
-                                    </p>
+                                    <span className="font-medium text-gray-600">MSP ID:</span>
+                                    <p className="text-gray-900">Org1MSP</p>
                                   </div>
                                   <div>
                                     <span className="font-medium text-gray-600">Network:</span>
-                                    <p className="text-gray-900">Hardhat Local (Chain ID: 31337)</p>
+                                    <p className="text-gray-900">Hyperledger Fabric 2.5</p>
                                   </div>
                                   <div>
                                     <span className="font-medium text-gray-600">Status:</span>
@@ -308,18 +304,18 @@ const BatchTracker: React.FC = () => {
                                 
                                 <div className="mt-3 flex space-x-2">
                                   <button 
-                                    onClick={() => navigator.clipboard.writeText(`0x${Math.random().toString(16).substr(2, 64)}`)}
+                                    onClick={() => navigator.clipboard.writeText(`tx_${Math.random().toString(36).substr(2, 16)}`)}
                                     className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
                                   >
-                                    Copy Tx Hash
+                                    Copy Tx ID
                                   </button>
                                   <a 
-                                    href={getBlockchainExplorerUrl(`0x${Math.random().toString(16).substr(2, 64)}`)}
+                                    href="#"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 transition-colors"
                                   >
-                                    View in Explorer
+                                    View in Fabric Explorer
                                   </a>
                                 </div>
                               </div>

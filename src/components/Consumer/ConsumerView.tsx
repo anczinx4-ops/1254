@@ -106,9 +106,9 @@ const ConsumerView: React.FC = () => {
       };
     }
 
-    // Would fetch from IPFS metadata in real implementation
+    // Would fetch from Fabric ledger in real implementation
     return {
-      purity: 'Verified on blockchain',
+      purity: 'Verified on Fabric ledger',
       moistureContent: 'Within standards',
       pesticideLevel: 'Below limits',
       heavyMetals: 'Within limits'

@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { authenticateToken, users } = require('./auth');
-const blockchainService = require('../services/blockchainService');
+const fabricService = require('../services/fabricService');
 const ipfsService = require('../services/ipfsService');
 const qrService = require('../services/qrService');
 const smsService = require('../services/smsService');
@@ -54,7 +54,7 @@ router.post('/process', authenticateToken, upload.single('image'), async (req, r
       });
     }
 
-    const processEventId = blockchainService.generateEventId('PROCESSING');
+    const processEventId = fabricService.generateEventId('PROCESSING');
 
     let imageHash = null;
     if (req.file) {
@@ -111,29 +111,24 @@ router.post('/process', authenticateToken, upload.single('image'), async (req, r
     }
 
     // Add event to blockchain
-    const eventData = {
+    const fabricResult = await fabricService.createProcessingEvent(
       batchId,
-      eventId: processEventId,
       parentEventId,
-      ipfsHash: metadataUpload.ipfsHash,
-      location: {
-        latitude: '0',
-        longitude: '0',
-        zone: 'Processing Facility'
-      },
-      qrCodeHash: qrResult.qrHash
-    };
-
-    const blockchainResult = await blockchainService.addProcessingEvent(
-      req.user.address,
-      user.privateKey,
-      eventData
+      user.name,
+      method,
+      temperature ? parseFloat(temperature) : null,
+      duration,
+      parseFloat(processYield),
+      notes,
+      metadataUpload.ipfsHash,
+      qrResult.qrHash
     );
 
-    if (!blockchainResult.success) {
+    if (!fabricResult.success) {
       return res.status(500).json({
         success: false,
-        error: 'Failed to add processing event to blockchain'
+        error: 'Failed to add processing event to Fabric network',
+        details: fabricResult.error
       });
     }
 
@@ -164,7 +159,7 @@ router.post('/process', authenticateToken, upload.single('image'), async (req, r
           dataURL: qrResult.dataURL,
           trackingUrl: qrResult.trackingUrl
         },
-        blockchain: blockchainResult
+        fabric: fabricResult
       }
     });
   } catch (error) {
