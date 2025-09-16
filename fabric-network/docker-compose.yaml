@@ -51,6 +51,10 @@ services:
       - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
       - ORDERER_OPERATIONS_LISTENADDRESS=orderer.herbionyx.com:9443
       - ORDERER_METRICS_PROVIDER=prometheus
+      - ORDERER_GENERAL_BCCSP_DEFAULT=SW
+      - ORDERER_GENERAL_BCCSP_SW_HASH=SHA2
+      - ORDERER_GENERAL_BCCSP_SW_SECURITY=256
+      - ORDERER_GENERAL_BCCSP_SW_FILEKEYSTORE_KEYSTORE=/var/hyperledger/orderer/msp/keystore
     working_dir: /root
     command: orderer
     volumes:
@@ -90,6 +94,10 @@ services:
       - CORE_METRICS_PROVIDER=prometheus
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0org1"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+      - CORE_PEER_BCCSP_DEFAULT=SW
+      - CORE_PEER_BCCSP_SW_HASH=SHA2
+      - CORE_PEER_BCCSP_SW_SECURITY=256
+      - CORE_PEER_BCCSP_SW_FILEKEYSTORE_KEYSTORE=/etc/hyperledger/fabric/msp/keystore
     volumes:
       - ./config:/etc/hyperledger/peercfg
       - ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com:/etc/hyperledger/fabric
