@@ -1,7 +1,7 @@
 class IPFSService {
   private pinataApiUrl = 'https://api.pinata.cloud';
-  private pinataApiKey = process.env.VITE_PINATA_API_KEY || '';
-  private pinataSecretKey = process.env.VITE_PINATA_SECRET_KEY || '';
+  private pinataApiKey = import.meta.env.VITE_PINATA_API_KEY || '';
+  private pinataSecretKey = import.meta.env.VITE_PINATA_SECRET_KEY || '';
 
   async uploadJSON(jsonData: any, name: string) {
     try {
