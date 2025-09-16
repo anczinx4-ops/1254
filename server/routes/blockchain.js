@@ -1,16 +1,16 @@
 const express = require('express');
-const { authenticateToken } = require('./auth');
-const blockchainService = require('../services/blockchainService');
+const { authenticateToken, users } = require('./auth');
+const realBlockchainService = require('../services/realBlockchainService');
 
 const router = express.Router();
 
 // Initialize blockchain service
 router.post('/initialize', async (req, res) => {
   try {
-    const result = await blockchainService.init();
+    const result = await realBlockchainService.init();
     res.json({
       success: true,
-      message: 'Blockchain service initialized',
+      message: 'Real blockchain service initialized on Polygon Mumbai',
       result
     });
   } catch (error) {
@@ -35,12 +35,21 @@ router.post('/create-batch', authenticateToken, async (req, res) => {
       });
     }
 
-    const result = await blockchainService.createBatch(userAddress, batchData);
+    // Get user role from our user system
+    const user = users.get(req.user.address);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const result = await realBlockchainService.createBatch(userAddress, user.role, batchData);
     
     res.json({
       success: result.success,
       data: result,
-      message: result.success ? 'Batch created successfully' : 'Failed to create batch'
+      message: result.success ? 'Batch created successfully on Polygon Mumbai' : 'Failed to create batch'
     });
   } catch (error) {
     console.error('Create batch error:', error);
@@ -64,7 +73,15 @@ router.post('/add-quality-test', authenticateToken, async (req, res) => {
       });
     }
 
-    const result = await blockchainService.addQualityTestEvent(userAddress, 'dummy-key', eventData);
+    const user = users.get(req.user.address);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const result = await realBlockchainService.addEvent(userAddress, user.role, eventData, 1); // Quality test = 1
     
     res.json({
       success: result.success,
@@ -93,7 +110,15 @@ router.post('/add-processing', authenticateToken, async (req, res) => {
       });
     }
 
-    const result = await blockchainService.addProcessingEvent(userAddress, 'dummy-key', eventData);
+    const user = users.get(req.user.address);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const result = await realBlockchainService.addEvent(userAddress, user.role, eventData, 2); // Processing = 2
     
     res.json({
       success: result.success,
@@ -122,7 +147,15 @@ router.post('/add-manufacturing', authenticateToken, async (req, res) => {
       });
     }
 
-    const result = await blockchainService.addManufacturingEvent(userAddress, 'dummy-key', eventData);
+    const user = users.get(req.user.address);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const result = await realBlockchainService.addEvent(userAddress, user.role, eventData, 3); // Manufacturing = 3
     
     res.json({
       success: result.success,
@@ -151,7 +184,7 @@ router.get('/batch-events/:batchId', async (req, res) => {
       });
     }
 
-    const events = await blockchainService.getBatchEvents(batchId);
+    const events = await realBlockchainService.getBatchEvents(batchId);
     
     res.json({
       success: true,
@@ -170,7 +203,7 @@ router.get('/batch-events/:batchId', async (req, res) => {
 // Get all batches
 router.get('/all-batches', async (req, res) => {
   try {
-    const batches = await blockchainService.getAllBatches();
+    const batches = await realBlockchainService.getAllBatches();
     
     res.json({
       success: true,
@@ -189,7 +222,7 @@ router.get('/all-batches', async (req, res) => {
 // Generate batch ID
 router.get('/generate-batch-id', (req, res) => {
   try {
-    const batchId = blockchainService.generateBatchId();
+    const batchId = realBlockchainService.generateBatchId();
     
     res.json({
       success: true,
@@ -217,7 +250,7 @@ router.post('/generate-event-id', (req, res) => {
       });
     }
 
-    const eventId = blockchainService.generateEventId(eventType);
+    const eventId = realBlockchainService.generateEventId(eventType);
     
     res.json({
       success: true,
