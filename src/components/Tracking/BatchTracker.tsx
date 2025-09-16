@@ -235,9 +235,7 @@ const BatchTracker: React.FC = () => {
                         </div>
                         
                         <div className="mt-4 pt-4 border-t border-gray-100">
-                          <button className="flex items-center text-indigo-600 hover:text-indigo-700 text-sm font-medium">
-                            <ExternalLink className="h-4 w-4 mr-1" />
-                      <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-4">
                         <button 
                           onClick={() => toggleTransactions(event.eventId)}
                           className="flex items-center text-indigo-600 hover:text-indigo-700 text-sm font-medium"
