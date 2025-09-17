@@ -251,13 +251,14 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
 
   const closeModal = useCallback(() => setHoveredWindow(null), []);
 
-  // Memoized window position calculation - fixed to orbit around center
+  // Memoized window position calculation - FIXED VERSION
   const windowPositions = useMemo(() => {
-    const radius = (typeof window !== 'undefined' && window.innerWidth > 768) ? 160 : 120;
+    const radius = window.innerWidth > 768 ? 280 : 180;
     return circularWindows.map((_, index) => {
-      // Simple angle calculation - each bubble gets an equal slice of 360 degrees
-      const angle = (index / circularWindows.length) * 360 + (activeIndex * 60); // Rotation based on activeIndex
+      // Simplified angle calculation - distribute evenly around circle
+      const angle = (index / circularWindows.length) * 360 - 90; // Start from top (-90 degrees)
       const radian = (angle * Math.PI) / 180;
+      
       return {
         x: radius * Math.cos(radian),
         y: radius * Math.sin(radian),
@@ -331,33 +332,35 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
             </h1>
           </div>
 
-          {/* Central Enter Button */}
-          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-            <div className="relative">
-              <div className="absolute -inset-8 md:-inset-12 rounded-full border border-white/20 animate-ping opacity-70" />
-              <div className="absolute -inset-16 md:-inset-20 rounded-full border border-white/10 animate-ping opacity-50" style={{ animationDelay: '1s' }} />
-              
-              <button
-                onClick={onEnter}
-                className="group relative w-32 h-32 md:w-48 md:h-48 rounded-full bg-black/40 backdrop-blur-xl border-4 border-white/30 hover:border-white/60 transition-all duration-500 hover:scale-110 flex flex-col items-center justify-center"
-              >
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          {/* FIXED: Container for centered positioning */}
+          <div className="absolute inset-0 flex items-center justify-center z-25">
+            
+            {/* Central Enter Button - HIGHER Z-INDEX */}
+            <div className="relative z-40">
+              <div className="relative">
+                <div className="absolute -inset-8 md:-inset-12 rounded-full border border-white/20 animate-ping opacity-70" />
+                <div className="absolute -inset-16 md:-inset-20 rounded-full border border-white/10 animate-ping opacity-50" style={{ animationDelay: '1s' }} />
                 
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mb-2 md:mb-4 group-hover:bg-white/40 transition-all duration-300">
-                    <ArrowRight className="h-6 w-6 md:h-8 md:w-8 text-white group-hover:translate-x-1 transition-transform" />
+                <button
+                  onClick={onEnter}
+                  className="group relative w-32 h-32 md:w-48 md:h-48 rounded-full bg-black/40 backdrop-blur-xl border-4 border-white/30 hover:border-white/60 transition-all duration-500 hover:scale-110 flex flex-col items-center justify-center"
+                >
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mb-2 md:mb-4 group-hover:bg-white/40 transition-all duration-300">
+                      <ArrowRight className="h-6 w-6 md:h-8 md:w-8 text-white group-hover:translate-x-1 transition-transform" />
+                    </div>
+                    <span className="text-white font-bold text-lg md:text-xl tracking-wider">ENTER</span>
+                    <span className="text-blue-200 text-xs md:text-sm mt-1">PLATFORM</span>
                   </div>
-                  <span className="text-white font-bold text-lg md:text-xl tracking-wider">ENTER</span>
-                  <span className="text-blue-200 text-xs md:text-sm mt-1">PLATFORM</span>
-                </div>
-              </button>
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Revolving Circular Windows */}
-          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-25">
+            {/* FIXED: Revolving Circular Windows Container */}
             <div 
-              className="relative w-0 h-0"
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
               style={{
                 transform: hoveredWindow !== null 
                   ? `rotate(${scrollY * 0.03}deg)` 
@@ -365,37 +368,42 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
                 transition: hoveredWindow !== null ? 'transform 0.1s ease-out' : 'none'
               }}
             >
-              {circularWindows.map((window, index) => {
-                const position = windowPositions[index];
-                return (
-                  <div
-                    key={window.id}
-                    className="absolute group circular-window"
-                    style={{
-                      left: `${position.x}px`,
-                      top: `${position.y}px`,
-                      transform: 'translate(-50%, -50%)',
-                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                      zIndex: hoveredWindow === index ? 35 : 25
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveIndex(index);
-                      setHoveredWindow(index);
-                    }}
-                    onMouseEnter={() => handleWindowHover(index)}
-                    onMouseLeave={handleWindowLeave}
-                  >
-                    <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 backdrop-blur-xl transition-all duration-500 bg-black/30 cursor-pointer border-white/30 hover:border-white/60 hover:scale-110">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <window.icon className={`h-6 w-6 md:h-8 md:w-8 transition-colors ${
-                          position.isActive ? 'text-blue-300' : 'text-white'
-                        }`} />
+              {/* FIXED: Properly centered circle container */}
+              <div className="relative w-0 h-0">
+                {circularWindows.map((window, index) => {
+                  const position = windowPositions[index];
+                  return (
+                    <div
+                      key={window.id}
+                      className="absolute group circular-window pointer-events-auto"
+                      style={{
+                        left: `${position.x}px`,
+                        top: `${position.y}px`,
+                        transform: 'translate(-50%, -50%)',
+                        transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                        zIndex: hoveredWindow === index ? 35 : 25
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveIndex(index);
+                        setHoveredWindow(index);
+                      }}
+                      onMouseEnter={() => handleWindowHover(index)}
+                      onMouseLeave={handleWindowLeave}
+                    >
+                      <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 backdrop-blur-xl transition-all duration-500 bg-black/30 cursor-pointer hover:scale-110 ${
+                        position.isActive ? 'border-blue-400/60 bg-blue-500/10' : 'border-white/30 hover:border-white/60'
+                      }`}>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <window.icon className={`h-6 w-6 md:h-8 md:w-8 transition-colors ${
+                            position.isActive ? 'text-blue-300' : 'text-white'
+                          }`} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         </section>
