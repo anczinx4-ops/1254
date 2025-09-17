@@ -98,7 +98,7 @@ ChannelParticipation:
 Admin:
   ListenAddress: 0.0.0.0:7053
   TLS:
-    Enabled: true
+    Enabled: false
     Certificate: /var/hyperledger/orderer/tls/server.crt
     PrivateKey: /var/hyperledger/orderer/tls/server.key
     ClientAuthRequired: false

@@ -46,9 +46,28 @@ function printHelp() {
 function networkUp() {
   echo -e "${GREEN}Starting HerbionYX Fabric Network...${NC}"
   
+  # Clean up any existing containers and networks
+  echo -e "${YELLOW}Cleaning up existing containers...${NC}"
+  cd ..
+  docker-compose down --volumes --remove-orphans
+  docker system prune -f
+  cd scripts
+  
   # Generate crypto material
   echo -e "${YELLOW}Generating certificates...${NC}"
   ./generate-certs.sh
+  
+  # Verify certificates exist
+  echo -e "${YELLOW}Verifying certificate structure...${NC}"
+  if [ ! -d "../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp/signcerts" ]; then
+    echo -e "${RED}Error: Peer MSP signcerts directory not found${NC}"
+    exit 1
+  fi
+  
+  if [ ! -d "../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/signcerts" ]; then
+    echo -e "${RED}Error: Orderer MSP signcerts directory not found${NC}"
+    exit 1
+  fi
   
   # Start the network
   echo -e "${YELLOW}Starting Docker containers...${NC}"
@@ -58,7 +77,13 @@ function networkUp() {
   
   # Wait for containers to start
   echo -e "${YELLOW}Waiting for containers to start...${NC}"
-  sleep 15
+  sleep 30
+  
+  # Check container status
+  echo -e "${YELLOW}Checking container status...${NC}"
+  cd ..
+  docker-compose ps
+  cd scripts
   
   echo -e "${GREEN}✅ Network started successfully!${NC}"
 }

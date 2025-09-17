@@ -11,7 +11,9 @@ export FABRIC_LOGGING_SPEC=INFO
 # Create organizations directory structure
 echo "Creating directory structure..."
 mkdir -p ../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/{msp,tls}
+mkdir -p ../organizations/ordererOrganizations/herbionyx.com/msp/{admincerts,cacerts,tlscacerts}
 mkdir -p ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/{msp,tls}
+mkdir -p ../organizations/peerOrganizations/org1.herbionyx.com/msp/{admincerts,cacerts,tlscacerts}
 mkdir -p ../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp
 mkdir -p ../organizations/fabric-ca/org1
 mkdir -p ../channel-artifacts
@@ -25,6 +27,9 @@ OrdererOrgs:
     Domain: herbionyx.com
     Specs:
       - Hostname: orderer
+        SANS:
+          - localhost
+          - orderer.herbionyx.com
     CA:
       Country: US
       Province: California
@@ -41,6 +46,7 @@ PeerOrgs:
       Count: 1
       SANS:
         - localhost
+        - peer0.org1.herbionyx.com
     Users:
       Count: 1
     CA:
@@ -65,23 +71,44 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Copy TLS CA certificates to the correct locations
-echo "Setting up TLS CA certificates..."
-mkdir -p ../organizations/ordererOrganizations/herbionyx.com/msp/tlscacerts
-mkdir -p ../organizations/peerOrganizations/org1.herbionyx.com/msp/tlscacerts
+# Fix MSP directory structure for peer
+echo "Setting up MSP directory structure..."
 
-# Check if certificates exist and copy them
-if [ -f "../organizations/ordererOrganizations/herbionyx.com/tlsca/tlsca.herbionyx.com-cert.pem" ]; then
-    cp ../organizations/ordererOrganizations/herbionyx.com/tlsca/tlsca.herbionyx.com-cert.pem ../organizations/ordererOrganizations/herbionyx.com/msp/tlscacerts/
+# Copy certificates to correct locations for peer
+PEER_MSP_DIR="../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp"
+mkdir -p ${PEER_MSP_DIR}/{signcerts,keystore,cacerts,tlscacerts,admincerts}
+
+# Copy signing certificate
+if [ -f "../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp/signcerts/peer0.org1.herbionyx.com-cert.pem" ]; then
+    echo "Peer signing certificate already exists"
 else
-    echo "Warning: Orderer TLS CA certificate not found"
+    # Find and copy the peer certificate
+    find ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com -name "*.pem" -path "*/signcerts/*" -exec cp {} ${PEER_MSP_DIR}/signcerts/ \;
 fi
 
-if [ -f "../organizations/peerOrganizations/org1.herbionyx.com/tlsca/tlsca.org1.herbionyx.com-cert.pem" ]; then
-    cp ../organizations/peerOrganizations/org1.herbionyx.com/tlsca/tlsca.org1.herbionyx.com-cert.pem ../organizations/peerOrganizations/org1.herbionyx.com/msp/tlscacerts/
-else
-    echo "Warning: Peer TLS CA certificate not found"
-fi
+# Copy CA certificates
+cp ../organizations/peerOrganizations/org1.herbionyx.com/ca/ca.org1.herbionyx.com-cert.pem ${PEER_MSP_DIR}/cacerts/
+cp ../organizations/peerOrganizations/org1.herbionyx.com/tlsca/tlsca.org1.herbionyx.com-cert.pem ${PEER_MSP_DIR}/tlscacerts/
+
+# Copy admin certificates
+cp ../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp/signcerts/Admin@org1.herbionyx.com-cert.pem ${PEER_MSP_DIR}/admincerts/
+
+# Copy private key
+find ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp/keystore -name "*_sk" -exec cp {} ${PEER_MSP_DIR}/keystore/ \;
+
+# Fix MSP directory structure for orderer
+ORDERER_MSP_DIR="../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp"
+mkdir -p ${ORDERER_MSP_DIR}/{signcerts,keystore,cacerts,tlscacerts,admincerts}
+
+# Copy orderer certificates
+cp ../organizations/ordererOrganizations/herbionyx.com/ca/ca.herbionyx.com-cert.pem ${ORDERER_MSP_DIR}/cacerts/
+cp ../organizations/ordererOrganizations/herbionyx.com/tlsca/tlsca.herbionyx.com-cert.pem ${ORDERER_MSP_DIR}/tlscacerts/
+
+# Copy orderer signing certificate and private key
+find ../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/keystore -name "*_sk" -exec cp {} ${ORDERER_MSP_DIR}/keystore/ \;
+
+# Copy admin certificates for orderer
+cp ../organizations/ordererOrganizations/herbionyx.com/users/Admin@herbionyx.com/msp/signcerts/Admin@herbionyx.com-cert.pem ${ORDERER_MSP_DIR}/admincerts/
 
 # Set proper permissions
 echo "Setting permissions..."
