@@ -13,7 +13,7 @@ export CORE_PEER_TLS_ENABLED=true
 export CORE_PEER_LOCALMSPID="Org1MSP"
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
 export CORE_PEER_MSPCONFIGPATH=${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp
-export CORE_PEER_ADDRESS=localhost:7051
+export CORE_PEER_ADDRESS=peer0.org1.herbionyx.com:7051
 export FABRIC_LOGGING_SPEC=INFO
 
 # Colors for output
@@ -117,12 +117,30 @@ function createChannel() {
     exit 1
   fi
   
-  # Create channel
+  # CRITICAL FIX: Use Docker container hostname instead of localhost
   echo -e "${YELLOW}Creating channel...${NC}"
-  peer channel create -o localhost:7050 -c $CHANNEL_NAME --ordererTLSHostnameOverride orderer.herbionyx.com -f ../channel-artifacts/${CHANNEL_NAME}.tx --outputBlock ../channel-artifacts/${CHANNEL_NAME}.block --tls --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
+  peer channel create \
+    -o orderer.herbionyx.com:7050 \
+    -c $CHANNEL_NAME \
+    --ordererTLSHostnameOverride orderer.herbionyx.com \
+    -f ../channel-artifacts/${CHANNEL_NAME}.tx \
+    --outputBlock ../channel-artifacts/${CHANNEL_NAME}.block \
+    --tls \
+    --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to create channel${NC}"
+    echo -e "${YELLOW}Checking if orderer is accessible...${NC}"
+    
+    # Test orderer connectivity
+    echo -e "${YELLOW}Testing orderer connectivity...${NC}"
+    docker exec -it fabric-network-peer0.org1.herbionyx.com-1 ping -c 3 orderer.herbionyx.com || {
+      echo -e "${RED}Cannot reach orderer container${NC}"
+      echo -e "${YELLOW}Available containers:${NC}"
+      docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+      exit 1
+    }
+    
     exit 1
   fi
   
@@ -168,9 +186,18 @@ function deployChaincode() {
     exit 1
   fi
   
-  # Approve chaincode
+  # Approve chaincode - FIXED: Use correct orderer hostname
   echo -e "${YELLOW}Approving chaincode...${NC}"
-  peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.herbionyx.com --channelID $CHANNEL_NAME --name $CHAINCODE_NAME --version $CHAINCODE_VERSION --package-id $PACKAGE_ID --sequence $CHAINCODE_SEQUENCE --tls --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
+  peer lifecycle chaincode approveformyorg \
+    -o orderer.herbionyx.com:7050 \
+    --ordererTLSHostnameOverride orderer.herbionyx.com \
+    --channelID $CHANNEL_NAME \
+    --name $CHAINCODE_NAME \
+    --version $CHAINCODE_VERSION \
+    --package-id $PACKAGE_ID \
+    --sequence $CHAINCODE_SEQUENCE \
+    --tls \
+    --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to approve chaincode${NC}"
@@ -179,20 +206,44 @@ function deployChaincode() {
   
   # Check commit readiness
   echo -e "${YELLOW}Checking commit readiness...${NC}"
-  peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name $CHAINCODE_NAME --version $CHAINCODE_VERSION --sequence $CHAINCODE_SEQUENCE --tls --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem --output json
+  peer lifecycle chaincode checkcommitreadiness \
+    --channelID $CHANNEL_NAME \
+    --name $CHAINCODE_NAME \
+    --version $CHAINCODE_VERSION \
+    --sequence $CHAINCODE_SEQUENCE \
+    --tls \
+    --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem \
+    --output json
   
-  # Commit chaincode
+  # Commit chaincode - FIXED: Use correct orderer hostname
   echo -e "${YELLOW}Committing chaincode...${NC}"
-  peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.herbionyx.com --channelID $CHANNEL_NAME --name $CHAINCODE_NAME --version $CHAINCODE_VERSION --sequence $CHAINCODE_SEQUENCE --tls --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem --peerAddresses localhost:7051 --tlsRootCertFiles ${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
+  peer lifecycle chaincode commit \
+    -o orderer.herbionyx.com:7050 \
+    --ordererTLSHostnameOverride orderer.herbionyx.com \
+    --channelID $CHANNEL_NAME \
+    --name $CHAINCODE_NAME \
+    --version $CHAINCODE_VERSION \
+    --sequence $CHAINCODE_SEQUENCE \
+    --tls \
+    --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem \
+    --peerAddresses peer0.org1.herbionyx.com:7051 \
+    --tlsRootCertFiles ${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to commit chaincode${NC}"
     exit 1
   fi
   
-  # Initialize chaincode
+  # Initialize chaincode - FIXED: Use correct orderer hostname
   echo -e "${YELLOW}Initializing chaincode...${NC}"
-  peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.herbionyx.com --tls --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"function":"initLedger","Args":[]}'
+  peer chaincode invoke \
+    -o orderer.herbionyx.com:7050 \
+    --ordererTLSHostnameOverride orderer.herbionyx.com \
+    --tls \
+    --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem \
+    -C $CHANNEL_NAME \
+    -n $CHAINCODE_NAME \
+    -c '{"function":"initLedger","Args":[]}'
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to initialize chaincode${NC}"

@@ -1,8 +1,5 @@
 # Hyperledger Fabric Orderer Configuration
 General:
-  # Ledger Type
-  LedgerType: file
-  
   # Listen address
   ListenAddress: 0.0.0.0
   ListenPort: 7050

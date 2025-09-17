@@ -89,13 +89,27 @@ if [ ! -d "../organizations/ordererOrganizations/herbionyx.com" ]; then
     exit 1
 fi
 
-# Fix peer MSP structure
+# Fix peer MSP structure - CRITICAL FIX
 PEER_MSP_DIR="../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp"
 if [ -d "$PEER_MSP_DIR" ]; then
     echo "Peer MSP directory exists, setting up structure..."
     
     # Ensure all required directories exist
     mkdir -p ${PEER_MSP_DIR}/{signcerts,keystore,cacerts,tlscacerts,admincerts}
+    
+    # Copy signing certificate - THIS IS THE CRITICAL FIX
+    if [ -f "../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp/signcerts/peer0.org1.herbionyx.com-cert.pem" ]; then
+        echo "✅ Peer signing certificate found"
+    else
+        echo "❌ Peer signing certificate missing - this will cause peer crash"
+        # Find the actual cert file
+        CERT_FILE=$(find ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp/signcerts/ -name "*.pem" 2>/dev/null | head -1)
+        if [ -n "$CERT_FILE" ]; then
+            echo "Found certificate: $CERT_FILE"
+        else
+            echo "No certificate found in signcerts directory"
+        fi
+    fi
     
     # Copy CA certificates
     if [ -f "../organizations/peerOrganizations/org1.herbionyx.com/ca/ca.org1.herbionyx.com-cert.pem" ]; then
@@ -128,6 +142,17 @@ if [ -d "$ORDERER_MSP_DIR" ]; then
     
     # Ensure all required directories exist
     mkdir -p ${ORDERER_MSP_DIR}/{signcerts,keystore,cacerts,tlscacerts,admincerts}
+    
+    # Verify orderer signing certificate
+    if [ -f "../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/signcerts/orderer.herbionyx.com-cert.pem" ]; then
+        echo "✅ Orderer signing certificate found"
+    else
+        echo "❌ Orderer signing certificate missing"
+        CERT_FILE=$(find ../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/signcerts/ -name "*.pem" 2>/dev/null | head -1)
+        if [ -n "$CERT_FILE" ]; then
+            echo "Found certificate: $CERT_FILE"
+        fi
+    fi
     
     # Copy orderer certificates
     if [ -f "../organizations/ordererOrganizations/herbionyx.com/ca/ca.herbionyx.com-cert.pem" ]; then
@@ -216,3 +241,22 @@ for file in "${CRITICAL_FILES[@]}"; do
         echo "❌ $file missing"
     fi
 done
+
+# Verify MSP signcerts directories
+echo "Verifying MSP signcerts directories..."
+PEER_SIGNCERTS="../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp/signcerts"
+ORDERER_SIGNCERTS="../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/signcerts"
+
+if [ -d "$PEER_SIGNCERTS" ] && [ "$(ls -A $PEER_SIGNCERTS)" ]; then
+    echo "✅ Peer signcerts directory exists and contains files"
+    ls -la "$PEER_SIGNCERTS"
+else
+    echo "❌ Peer signcerts directory is empty or missing"
+fi
+
+if [ -d "$ORDERER_SIGNCERTS" ] && [ "$(ls -A $ORDERER_SIGNCERTS)" ]; then
+    echo "✅ Orderer signcerts directory exists and contains files"
+    ls -la "$ORDERER_SIGNCERTS"
+else
+    echo "❌ Orderer signcerts directory is empty or missing"
+fi

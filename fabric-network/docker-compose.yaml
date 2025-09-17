@@ -18,7 +18,7 @@ services:
       - "17054:17054"
     command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
     volumes:
-      - ../organizations/fabric-ca/org1:/etc/hyperledger/fabric-ca-server
+      - ./organizations/fabric-ca/org1:/etc/hyperledger/fabric-ca-server
     container_name: ca.org1.herbionyx.com
     networks:
       - herbionyx
@@ -28,7 +28,6 @@ services:
     image: hyperledger/fabric-orderer:latest
     environment:
       - FABRIC_LOGGING_SPEC=INFO
-      - FABRIC_CFG_PATH=/etc/hyperledger/fabric
       - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
       - ORDERER_GENERAL_LISTENPORT=7050
       - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
@@ -58,9 +57,8 @@ services:
     working_dir: /root
     command: orderer
     volumes:
-      - ./config:/etc/hyperledger/fabric
-      - ../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp:/var/hyperledger/orderer/msp
-      - ../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/tls/:/var/hyperledger/orderer/tls
+      - ./organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp:/var/hyperledger/orderer/msp
+      - ./organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/tls/:/var/hyperledger/orderer/tls
       - orderer.herbionyx.com:/var/hyperledger/production/orderer
     ports:
       - 7050:7050
@@ -73,8 +71,6 @@ services:
   peer0.org1.herbionyx.com:
     image: hyperledger/fabric-peer:latest
     environment:
-      - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
-      - CORE_PEER_FILESYSTEMPATH=/var/hyperledger/production
       - FABRIC_LOGGING_SPEC=INFO
       - CORE_PEER_TLS_ENABLED=true
       - CORE_PEER_PROFILE_ENABLED=false
@@ -103,8 +99,7 @@ services:
       - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
       - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
     volumes:
-      - ./config:/etc/hyperledger/peercfg
-      - ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com:/etc/hyperledger/fabric
+      - ./organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com:/etc/hyperledger/fabric
       - peer0.org1.herbionyx.com:/var/hyperledger/production
     working_dir: /root
     command: peer node start
