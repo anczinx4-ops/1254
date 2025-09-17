@@ -251,13 +251,12 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
 
   const closeModal = useCallback(() => setHoveredWindow(null), []);
 
-  // Memoized window position calculation
+  // Memoized window position calculation - fixed to orbit around center
   const windowPositions = useMemo(() => {
-    const radius = (typeof window !== 'undefined' && window.innerWidth > 768) ? 280 : 180;
+    const radius = (typeof window !== 'undefined' && window.innerWidth > 768) ? 160 : 120;
     return circularWindows.map((_, index) => {
-      const reorderedIndex = (index + Math.floor(circularWindows.length / 2)) % circularWindows.length;
-      const adjustedIndex = (reorderedIndex - activeIndex + circularWindows.length) % circularWindows.length;
-      const angle = (adjustedIndex / circularWindows.length) * 360 - 90;
+      // Simple angle calculation - each bubble gets an equal slice of 360 degrees
+      const angle = (index / circularWindows.length) * 360 + (activeIndex * 60); // Rotation based on activeIndex
       const radian = (angle * Math.PI) / 180;
       return {
         x: radius * Math.cos(radian),
@@ -333,7 +332,7 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
           </div>
 
           {/* Central Enter Button */}
-          <div className="relative z-30">
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
             <div className="relative">
               <div className="absolute -inset-8 md:-inset-12 rounded-full border border-white/20 animate-ping opacity-70" />
               <div className="absolute -inset-16 md:-inset-20 rounded-full border border-white/10 animate-ping opacity-50" style={{ animationDelay: '1s' }} />
@@ -356,9 +355,9 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
           </div>
 
           {/* Revolving Circular Windows */}
-          <div className="absolute inset-0 flex items-center justify-center z-25">
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-25">
             <div 
-              className="relative w-[400px] h-[400px] md:w-[600px] md:h-[600px]"
+              className="relative w-0 h-0"
               style={{
                 transform: hoveredWindow !== null 
                   ? `rotate(${scrollY * 0.03}deg)` 
@@ -373,8 +372,10 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
                     key={window.id}
                     className="absolute group circular-window"
                     style={{
-                      transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
-                      transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                      left: `${position.x}px`,
+                      top: `${position.y}px`,
+                      transform: 'translate(-50%, -50%)',
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                       zIndex: hoveredWindow === index ? 35 : 25
                     }}
                     onClick={(e) => {
