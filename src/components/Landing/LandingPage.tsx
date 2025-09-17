@@ -165,11 +165,11 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
     }
   }, []);
 
-  // Auto rotation effect - much slower rotation
+  // Auto rotation effect - faster rotation
   useEffect(() => {
     if (hoveredWindow === null) {
       const animate = () => {
-        setAutoRotation(prev => prev + 0.02); // Much slower rotation
+        setAutoRotation(prev => prev + 0.5); // Faster rotation speed
         autoRotationRef.current = requestAnimationFrame(animate);
       };
       autoRotationRef.current = requestAnimationFrame(animate);
@@ -323,8 +323,8 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
             </h1>
           </div>
 
-          {/* Central Enter Button - Same as first component */}
-          <div className="relative z-40">
+          {/* Central Enter Button - Perfectly centered */}
+          <div className="relative z-40 flex items-center justify-center h-screen">
             <div className="relative">
               <div className="absolute -inset-8 md:-inset-12 rounded-full border border-white/20 animate-ping opacity-70" />
               <div className="absolute -inset-16 md:-inset-20 rounded-full border border-white/10 animate-ping opacity-50" style={{ animationDelay: '1s' }} />
@@ -346,15 +346,15 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
             </div>
           </div>
 
-          {/* Revolving Circular Windows - Fixed to orbit around center button */}
+          {/* Revolving Circular Windows - Perfect orbit around center */}
           <div className="absolute inset-0 flex items-center justify-center z-30">
             <div 
               className="relative w-80 h-80"
               style={{
                 transform: hoveredWindow !== null 
-                  ? `rotate(${scrollY * 0.01}deg)` 
-                  : `rotate(${scrollY * 0.01 + autoRotation}deg)`,
-                transition: hoveredWindow !== null ? 'transform 0.3s ease-out' : 'none'
+                  ? `rotate(${scrollY * 0.5 + autoRotation}deg)` 
+                  : `rotate(${scrollY * 0.5 + autoRotation}deg)`,
+                transition: 'transform 0.2s ease-out'
               }}
             >
               {circularWindows.map((window, index) => {
@@ -367,7 +367,7 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
                       left: '50%',
                       top: '50%',
                       transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
-                      transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                       zIndex: hoveredWindow === index ? 35 : 25
                     }}
                     onClick={(e) => {
