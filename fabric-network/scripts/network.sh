@@ -13,7 +13,7 @@ export CORE_PEER_TLS_ENABLED=true
 export CORE_PEER_LOCALMSPID="Org1MSP"
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
 export CORE_PEER_MSPCONFIGPATH=${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp
-export CORE_PEER_ADDRESS=peer0.org1.herbionyx.com:7051
+export CORE_PEER_ADDRESS=localhost:7051
 export FABRIC_LOGGING_SPEC=INFO
 
 # Colors for output
@@ -117,25 +117,25 @@ function createChannel() {
     exit 1
   fi
   
-  # CRITICAL FIX: Use Docker container hostname instead of localhost
-  echo -e "${YELLOW}Creating channel...${NC}"
-  peer channel create \
+  # Create channel using CLI container
+  echo -e "${YELLOW}Creating channel using CLI container...${NC}"
+  docker exec cli peer channel create \
     -o orderer.herbionyx.com:7050 \
     -c $CHANNEL_NAME \
     --ordererTLSHostnameOverride orderer.herbionyx.com \
-    -f ../channel-artifacts/${CHANNEL_NAME}.tx \
-    --outputBlock ../channel-artifacts/${CHANNEL_NAME}.block \
+    -f ./channel-artifacts/${CHANNEL_NAME}.tx \
+    --outputBlock ./channel-artifacts/${CHANNEL_NAME}.block \
     --tls \
-    --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
+    --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to create channel${NC}"
-    echo -e "${YELLOW}Checking if orderer is accessible...${NC}"
+    echo -e "${YELLOW}Checking container connectivity...${NC}"
     
-    # Test orderer connectivity
-    echo -e "${YELLOW}Testing orderer connectivity...${NC}"
-    docker exec -it fabric-network-peer0.org1.herbionyx.com-1 ping -c 3 orderer.herbionyx.com || {
-      echo -e "${RED}Cannot reach orderer container${NC}"
+    # Test connectivity using CLI container
+    echo -e "${YELLOW}Testing orderer connectivity from CLI container...${NC}"
+    docker exec cli nslookup orderer.herbionyx.com || {
+      echo -e "${RED}DNS resolution failed in CLI container${NC}"
       echo -e "${YELLOW}Available containers:${NC}"
       docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
       exit 1
@@ -144,9 +144,9 @@ function createChannel() {
     exit 1
   fi
   
-  # Join channel
-  echo -e "${YELLOW}Joining channel...${NC}"
-  peer channel join -b ../channel-artifacts/${CHANNEL_NAME}.block
+  # Join channel using CLI container
+  echo -e "${YELLOW}Joining channel using CLI container...${NC}"
+  docker exec cli peer channel join -b ./channel-artifacts/${CHANNEL_NAME}.block
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to join channel${NC}"
@@ -159,26 +159,30 @@ function createChannel() {
 function deployChaincode() {
   echo -e "${GREEN}Deploying chaincode: ${CHAINCODE_NAME}${NC}"
   
-  # Package chaincode
+  # Package chaincode using CLI container
   echo -e "${YELLOW}Packaging chaincode...${NC}"
-  peer lifecycle chaincode package ${CHAINCODE_NAME}.tar.gz --path ../../chaincode --lang node --label ${CHAINCODE_NAME}_${CHAINCODE_VERSION}
+  docker exec cli peer lifecycle chaincode package ${CHAINCODE_NAME}.tar.gz \
+    --path /opt/gopath/src/github.com/chaincode \
+    --lang node \
+    --label ${CHAINCODE_NAME}_${CHAINCODE_VERSION}
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to package chaincode${NC}"
     exit 1
   fi
   
-  # Install chaincode
+  # Install chaincode using CLI container
   echo -e "${YELLOW}Installing chaincode...${NC}"
-  peer lifecycle chaincode install ${CHAINCODE_NAME}.tar.gz
+  docker exec cli peer lifecycle chaincode install ${CHAINCODE_NAME}.tar.gz
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to install chaincode${NC}"
     exit 1
   fi
   
-  # Get package ID
-  PACKAGE_ID=$(peer lifecycle chaincode queryinstalled --output json | jq -r '.installed_chaincodes[0].package_id')
+  # Get package ID using CLI container
+  echo -e "${YELLOW}Getting package ID...${NC}"
+  PACKAGE_ID=$(docker exec cli peer lifecycle chaincode queryinstalled --output json | jq -r '.installed_chaincodes[0].package_id')
   echo "Package ID: $PACKAGE_ID"
   
   if [ -z "$PACKAGE_ID" ]; then
@@ -186,9 +190,9 @@ function deployChaincode() {
     exit 1
   fi
   
-  # Approve chaincode - FIXED: Use correct orderer hostname
+  # Approve chaincode using CLI container
   echo -e "${YELLOW}Approving chaincode...${NC}"
-  peer lifecycle chaincode approveformyorg \
+  docker exec cli peer lifecycle chaincode approveformyorg \
     -o orderer.herbionyx.com:7050 \
     --ordererTLSHostnameOverride orderer.herbionyx.com \
     --channelID $CHANNEL_NAME \
@@ -197,27 +201,27 @@ function deployChaincode() {
     --package-id $PACKAGE_ID \
     --sequence $CHAINCODE_SEQUENCE \
     --tls \
-    --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
+    --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to approve chaincode${NC}"
     exit 1
   fi
   
-  # Check commit readiness
+  # Check commit readiness using CLI container
   echo -e "${YELLOW}Checking commit readiness...${NC}"
-  peer lifecycle chaincode checkcommitreadiness \
+  docker exec cli peer lifecycle chaincode checkcommitreadiness \
     --channelID $CHANNEL_NAME \
     --name $CHAINCODE_NAME \
     --version $CHAINCODE_VERSION \
     --sequence $CHAINCODE_SEQUENCE \
     --tls \
-    --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem \
+    --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem \
     --output json
   
-  # Commit chaincode - FIXED: Use correct orderer hostname
+  # Commit chaincode using CLI container
   echo -e "${YELLOW}Committing chaincode...${NC}"
-  peer lifecycle chaincode commit \
+  docker exec cli peer lifecycle chaincode commit \
     -o orderer.herbionyx.com:7050 \
     --ordererTLSHostnameOverride orderer.herbionyx.com \
     --channelID $CHANNEL_NAME \
@@ -225,22 +229,22 @@ function deployChaincode() {
     --version $CHAINCODE_VERSION \
     --sequence $CHAINCODE_SEQUENCE \
     --tls \
-    --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem \
+    --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem \
     --peerAddresses peer0.org1.herbionyx.com:7051 \
-    --tlsRootCertFiles ${PWD}/../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
+    --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to commit chaincode${NC}"
     exit 1
   fi
   
-  # Initialize chaincode - FIXED: Use correct orderer hostname
+  # Initialize chaincode using CLI container
   echo -e "${YELLOW}Initializing chaincode...${NC}"
-  peer chaincode invoke \
+  docker exec cli peer chaincode invoke \
     -o orderer.herbionyx.com:7050 \
     --ordererTLSHostnameOverride orderer.herbionyx.com \
     --tls \
-    --cafile ${PWD}/../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem \
+    --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem \
     -C $CHANNEL_NAME \
     -n $CHAINCODE_NAME \
     -c '{"function":"initLedger","Args":[]}'
