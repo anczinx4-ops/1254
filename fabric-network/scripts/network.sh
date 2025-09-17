@@ -31,6 +31,7 @@ function printHelp() {
   echo "      - 'restart' - Restart the network"
   echo "      - 'deployCC' - Deploy chaincode"
   echo "      - 'createChannel' - Create channel"
+  echo "      - 'genesis' - Generate genesis block"
   echo
   echo "    Flags:"
   echo "    -c <channel name> - Channel name to use (default: \"herbionyx-channel\")"
@@ -69,6 +70,10 @@ function networkUp() {
     exit 1
   fi
   
+  # Generate genesis block BEFORE starting containers
+  echo -e "${YELLOW}Generating genesis block...${NC}"
+  generateGenesis
+  
   # Start the network
   echo -e "${YELLOW}Starting Docker containers...${NC}"
   cd ..
@@ -105,6 +110,23 @@ function networkDown() {
   echo -e "${GREEN}✅ Network stopped and cleaned up!${NC}"
 }
 
+function generateGenesis() {
+  echo -e "${GREEN}Generating genesis block...${NC}"
+  
+  # Create channel-artifacts directory
+  mkdir -p ../channel-artifacts
+  
+  # Generate genesis block for system channel
+  configtxgen -profile HerbionYXSystemChannel -channelID system-channel -outputBlock ../channel-artifacts/genesis.block
+  
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Failed to generate genesis block${NC}"
+    exit 1
+  fi
+  
+  echo -e "${GREEN}✅ Genesis block generated successfully!${NC}"
+}
+
 function createChannel() {
   echo -e "${GREEN}Creating channel: ${CHANNEL_NAME}${NC}"
   
@@ -117,8 +139,21 @@ function createChannel() {
     exit 1
   fi
   
-  # Create channel using CLI container
+  # Create channel using CLI container with improved connectivity
   echo -e "${YELLOW}Creating channel using CLI container...${NC}"
+  
+  # First, test basic connectivity
+  echo -e "${YELLOW}Testing container connectivity...${NC}"
+  docker exec cli ping -c 3 orderer.herbionyx.com
+  
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Cannot reach orderer from CLI container${NC}"
+    echo -e "${YELLOW}Available containers:${NC}"
+    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    exit 1
+  fi
+  
+  # Create the channel
   docker exec cli peer channel create \
     -o orderer.herbionyx.com:7050 \
     -c $CHANNEL_NAME \
@@ -130,17 +165,8 @@ function createChannel() {
   
   if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to create channel${NC}"
-    echo -e "${YELLOW}Checking container connectivity...${NC}"
-    
-    # Test connectivity using CLI container
-    echo -e "${YELLOW}Testing orderer connectivity from CLI container...${NC}"
-    docker exec cli nslookup orderer.herbionyx.com || {
-      echo -e "${RED}DNS resolution failed in CLI container${NC}"
-      echo -e "${YELLOW}Available containers:${NC}"
-      docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-      exit 1
-    }
-    
+    echo -e "${YELLOW}Checking orderer logs...${NC}"
+    docker logs orderer.herbionyx.com --tail 50
     exit 1
   fi
   
@@ -152,6 +178,17 @@ function createChannel() {
     echo -e "${RED}Failed to join channel${NC}"
     exit 1
   fi
+  
+  # Update anchor peers
+  echo -e "${YELLOW}Updating anchor peers...${NC}"
+  configtxgen -profile HerbionYXChannel -outputAnchorPeersUpdate ../channel-artifacts/Org1MSPanchors.tx -channelID $CHANNEL_NAME -asOrg Org1MSP
+  
+  docker exec cli peer channel update \
+    -o orderer.herbionyx.com:7050 \
+    -c $CHANNEL_NAME \
+    -f ./channel-artifacts/Org1MSPanchors.tx \
+    --tls \
+    --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
   
   echo -e "${GREEN}✅ Channel created and joined successfully!${NC}"
 }
@@ -255,18 +292,6 @@ function deployChaincode() {
   fi
   
   echo -e "${GREEN}✅ Chaincode deployed successfully!${NC}"
-}
-
-function generateGenesis() {
-  echo -e "${GREEN}Generating genesis block...${NC}"
-  
-  # Create channel-artifacts directory
-  mkdir -p ../channel-artifacts
-  
-  # Generate genesis block
-  configtxgen -profile HerbionYXOrdererGenesis -channelID system-channel -outputBlock ../channel-artifacts/genesis.block
-  
-  echo -e "${GREEN}✅ Genesis block generated successfully!${NC}"
 }
 
 # Parse command line arguments

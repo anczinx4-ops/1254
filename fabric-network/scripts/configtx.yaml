@@ -113,7 +113,8 @@ Channel: &ChannelDefaults
     <<: *ChannelCapabilities
 
 Profiles:
-  HerbionYXOrdererGenesis:
+  # System channel profile - CRITICAL FIX
+  HerbionYXSystemChannel:
     <<: *ChannelDefaults
     Orderer:
       <<: *OrdererDefaults
@@ -126,6 +127,7 @@ Profiles:
         Organizations:
           - *Org1
 
+  # Application channel profile
   HerbionYXChannel:
     Consortium: SampleConsortium
     <<: *ChannelDefaults

@@ -24,7 +24,7 @@ services:
     networks:
       - herbionyx
 
-  # Orderer
+  # Orderer with system channel support
   orderer.herbionyx.com:
     image: hyperledger/fabric-orderer:latest
     environment:
@@ -40,8 +40,10 @@ services:
       - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
       - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
-      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      # CRITICAL FIX: Enable system channel
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=file
+      - ORDERER_GENERAL_BOOTSTRAPFILE=/var/hyperledger/orderer/orderer.genesis.block
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=false
       - ORDERER_ADMIN_TLS_ENABLED=true
       - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
@@ -60,6 +62,7 @@ services:
     volumes:
       - ./organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp:/var/hyperledger/orderer/msp
       - ./organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/tls/:/var/hyperledger/orderer/tls
+      - ./channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
       - orderer.herbionyx.com:/var/hyperledger/production/orderer
     ports:
       - 7050:7050
@@ -130,7 +133,7 @@ services:
     networks:
       - herbionyx
 
-  # CLI container for running peer commands
+  # CLI container with DNS utilities
   cli:
     image: hyperledger/fabric-tools:latest
     tty: true
