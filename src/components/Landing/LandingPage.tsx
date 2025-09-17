@@ -332,8 +332,8 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
               transformOrigin: 'center center'
             }}
           >
-            <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold text-white/8 leading-none select-none tracking-widest whitespace-nowrap">
-              HERBION<span className="text-blue-300/15">YX</span>
+            <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold text-white/25 leading-none select-none tracking-widest whitespace-nowrap drop-shadow-lg">
+              HERBION<span className="text-blue-300/40">YX</span>
             </h1>
           </div>
 
