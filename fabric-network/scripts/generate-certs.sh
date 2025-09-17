@@ -260,4 +260,3 @@ if [ -d "$ORDERER_SIGNCERTS" ] && [ "$(ls -A $ORDERER_SIGNCERTS)" ]; then
 else
     echo "❌ Orderer signcerts directory is empty or missing"
 fi
-12
