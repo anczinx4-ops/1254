@@ -151,16 +151,16 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
 
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      navigatePrevious();
+      navigateNext(); // Reversed: left arrow rotates clockwise (visually left movement)
       if (hoveredWindow !== null) {
-        const newIndex = (hoveredWindow - 1 + circularWindows.length) % circularWindows.length;
+        const newIndex = (hoveredWindow + 1) % circularWindows.length;
         setHoveredWindow(newIndex);
       }
     } else if (e.key === 'ArrowRight') {
       e.preventDefault();
-      navigateNext();
+      navigatePrevious(); // Reversed: right arrow rotates counter-clockwise (visually right movement)
       if (hoveredWindow !== null) {
-        const newIndex = (hoveredWindow + 1) % circularWindows.length;
+        const newIndex = (hoveredWindow - 1 + circularWindows.length) % circularWindows.length;
         setHoveredWindow(newIndex);
       }
     }
@@ -255,8 +255,10 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
   const windowPositions = useMemo(() => {
     const radius = window.innerWidth > 768 ? 280 : 180;
     return circularWindows.map((_, index) => {
-      // Simplified angle calculation - distribute evenly around circle
-      const angle = (index / circularWindows.length) * 360 - 90; // Start from top (-90 degrees)
+      // Calculate angle based on activeIndex rotation
+      const baseAngle = (index / circularWindows.length) * 360;
+      const rotationOffset = (activeIndex / circularWindows.length) * -360; // Negative for counter-clockwise
+      const angle = baseAngle + rotationOffset - 90; // Start from top (-90 degrees)
       const radian = (angle * Math.PI) / 180;
       
       return {
@@ -320,15 +322,18 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
         </header>
 
         {/* Hero Section */}
-        <section className="h-screen flex items-center justify-center relative pt-20">
+        <section className="h-screen flex items-center justify-center relative pt-24 md:pt-28">
           
-          {/* Main Title */}
+          {/* Main Title - Fixed positioning to avoid overlap */}
           <div 
-            className="absolute top-24 md:top-32 left-1/2 transform -translate-x-1/2 text-center pointer-events-none z-0"
-            style={{ transform: `translate(-50%, ${scrollY * -0.1}px)` }}
+            className="absolute top-16 md:top-20 left-1/2 transform -translate-x-1/2 text-center pointer-events-none z-0"
+            style={{ 
+              transform: `translate(-50%, ${scrollY * -0.1}px)`,
+              marginTop: '2rem'
+            }}
           >
-            <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold text-white/10 leading-tight select-none">
-              HERBION<span className="text-blue-300/20">YX</span>
+            <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold text-white/8 leading-tight select-none tracking-wider">
+              HERBION<span className="text-blue-300/15">YX</span>
             </h1>
           </div>
 
@@ -391,13 +396,9 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
                       onMouseEnter={() => handleWindowHover(index)}
                       onMouseLeave={handleWindowLeave}
                     >
-                      <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 backdrop-blur-xl transition-all duration-500 bg-black/30 cursor-pointer hover:scale-110 ${
-                        position.isActive ? 'border-blue-400/60 bg-blue-500/10' : 'border-white/30 hover:border-white/60'
-                      }`}>
+                      <div className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 backdrop-blur-xl transition-all duration-500 bg-black/30 cursor-pointer hover:scale-110 border-white/30 hover:border-white/60`}>
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <window.icon className={`h-6 w-6 md:h-8 md:w-8 transition-colors ${
-                            position.isActive ? 'text-blue-300' : 'text-white'
-                          }`} />
+                          <window.icon className="h-6 w-6 md:h-8 md:w-8 text-white transition-colors" />
                         </div>
                       </div>
                     </div>
