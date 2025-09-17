@@ -253,7 +253,7 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
 
   // Memoized window position calculation
   const windowPositions = useMemo(() => {
-    const radius = window.innerWidth > 768 ? 280 : 180;
+    const radius = (typeof window !== 'undefined' && window.innerWidth > 768) ? 280 : 180;
     return circularWindows.map((_, index) => {
       const reorderedIndex = (index + Math.floor(circularWindows.length / 2)) % circularWindows.length;
       const adjustedIndex = (reorderedIndex - activeIndex + circularWindows.length) % circularWindows.length;
@@ -333,7 +333,7 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
           </div>
 
           {/* Central Enter Button */}
-          <div className="relative z-30">
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
             <div className="relative">
               <div className="absolute -inset-8 md:-inset-12 rounded-full border border-white/20 animate-ping opacity-70" />
               <div className="absolute -inset-16 md:-inset-20 rounded-full border border-white/10 animate-ping opacity-50" style={{ animationDelay: '1s' }} />
@@ -356,7 +356,7 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
           </div>
 
           {/* Revolving Circular Windows */}
-          <div className="absolute inset-0 flex items-center justify-center z-25 mt-12">
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-25">
             <div 
               className="relative w-[400px] h-[400px] md:w-[600px] md:h-[600px]"
               style={{
