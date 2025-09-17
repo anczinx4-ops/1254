@@ -324,15 +324,15 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
         {/* Hero Section */}
         <section className="h-screen flex items-center justify-center relative pt-24 md:pt-28">
           
-          {/* Main Title - Fixed positioning to avoid overlap */}
+          {/* Vertical Title - Left Side */}
           <div 
-            className="absolute top-16 md:top-20 left-1/2 transform -translate-x-1/2 text-center pointer-events-none z-0"
+            className="absolute left-4 md:left-8 top-1/2 transform -translate-y-1/2 pointer-events-none z-0"
             style={{ 
-              transform: `translate(-50%, ${scrollY * -0.1}px)`,
-              marginTop: '2rem'
+              transform: `translateY(-50%) translateX(${scrollY * -0.05}px) rotate(-90deg)`,
+              transformOrigin: 'center center'
             }}
           >
-            <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold text-white/8 leading-tight select-none tracking-wider">
+            <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold text-white/8 leading-none select-none tracking-widest whitespace-nowrap">
               HERBION<span className="text-blue-300/15">YX</span>
             </h1>
           </div>
