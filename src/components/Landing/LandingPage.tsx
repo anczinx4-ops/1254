@@ -142,7 +142,7 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
     setActiveIndex((prev) => (prev - 1 + circularWindows.length) % circularWindows.length);
   }, [circularWindows.length]);
 
-  // Improved keyboard navigation - rotates the circle left/right
+  // Improved keyboard navigation - works when modal is open
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape' && hoveredWindow !== null) {
       setHoveredWindow(null);
@@ -151,12 +151,20 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
 
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      navigatePrevious(); // Rotates circle counter-clockwise
+      navigatePrevious();
+      if (hoveredWindow !== null) {
+        const newIndex = (hoveredWindow - 1 + circularWindows.length) % circularWindows.length;
+        setHoveredWindow(newIndex);
+      }
     } else if (e.key === 'ArrowRight') {
       e.preventDefault();
-      navigateNext(); // Rotates circle clockwise
+      navigateNext();
+      if (hoveredWindow !== null) {
+        const newIndex = (hoveredWindow + 1) % circularWindows.length;
+        setHoveredWindow(newIndex);
+      }
     }
-  }, [hoveredWindow, navigateNext, navigatePrevious]);
+  }, [hoveredWindow, navigateNext, navigatePrevious, circularWindows.length]);
 
   const handleClick = useCallback((e: MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -165,11 +173,11 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
     }
   }, []);
 
-  // Auto rotation effect - faster rotation
+  // Auto rotation effect
   useEffect(() => {
     if (hoveredWindow === null) {
       const animate = () => {
-        setAutoRotation(prev => prev + 0.5); // Faster rotation speed
+        setAutoRotation(prev => prev + 0.1);
         autoRotationRef.current = requestAnimationFrame(animate);
       };
       autoRotationRef.current = requestAnimationFrame(animate);
@@ -241,14 +249,15 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
     hoverTimeoutRef.current = setTimeout(() => setHoveredWindow(null), 50);
   }, []);
 
-  // Fixed window position calculation - orbits around center button
+  const closeModal = useCallback(() => setHoveredWindow(null), []);
+
+  // Memoized window position calculation
   const windowPositions = useMemo(() => {
-    // Fixed radius for consistent orbit around the center button
-    const radius = 160; // Fixed radius to orbit around center button
-    
+    const radius = window.innerWidth > 768 ? 280 : 180;
     return circularWindows.map((_, index) => {
-      // Simple angle calculation for circular orbit
-      const angle = (index / circularWindows.length) * 360 + (activeIndex * (360 / circularWindows.length));
+      const reorderedIndex = (index + Math.floor(circularWindows.length / 2)) % circularWindows.length;
+      const adjustedIndex = (reorderedIndex - activeIndex + circularWindows.length) % circularWindows.length;
+      const angle = (adjustedIndex / circularWindows.length) * 360 - 90;
       const radian = (angle * Math.PI) / 180;
       return {
         x: radius * Math.cos(radian),
@@ -316,45 +325,45 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
           {/* Main Title */}
           <div 
             className="absolute top-24 md:top-32 left-1/2 transform -translate-x-1/2 text-center pointer-events-none z-0"
-            style={{ transform: `translate(-50%, ${scrollY * -0.05}px)` }}
+            style={{ transform: `translate(-50%, ${scrollY * -0.1}px)` }}
           >
             <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold text-white/10 leading-tight select-none">
               HERBION<span className="text-blue-300/20">YX</span>
             </h1>
           </div>
 
-          {/* Central Enter Button - Perfectly centered */}
-          <div className="relative z-40 flex items-center justify-center h-screen">
+          {/* Central Enter Button */}
+          <div className="relative z-30">
             <div className="relative">
               <div className="absolute -inset-8 md:-inset-12 rounded-full border border-white/20 animate-ping opacity-70" />
               <div className="absolute -inset-16 md:-inset-20 rounded-full border border-white/10 animate-ping opacity-50" style={{ animationDelay: '1s' }} />
               
               <button
                 onClick={onEnter}
-                className="group relative w-32 h-32 md:w-40 md:h-40 rounded-full bg-black/40 backdrop-blur-xl border-4 border-white/30 hover:border-white/60 transition-all duration-500 hover:scale-110 flex flex-col items-center justify-center"
+                className="group relative w-32 h-32 md:w-48 md:h-48 rounded-full bg-black/40 backdrop-blur-xl border-4 border-white/30 hover:border-white/60 transition-all duration-500 hover:scale-110 flex flex-col items-center justify-center"
               >
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
                 <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mb-2 md:mb-3 group-hover:bg-white/40 transition-all duration-300">
-                    <ArrowRight className="h-6 w-6 md:h-7 md:w-7 text-white group-hover:translate-x-1 transition-transform" />
+                  <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mb-2 md:mb-4 group-hover:bg-white/40 transition-all duration-300">
+                    <ArrowRight className="h-6 w-6 md:h-8 md:w-8 text-white group-hover:translate-x-1 transition-transform" />
                   </div>
-                  <span className="text-white font-bold text-base md:text-lg tracking-wider">ENTER</span>
+                  <span className="text-white font-bold text-lg md:text-xl tracking-wider">ENTER</span>
                   <span className="text-blue-200 text-xs md:text-sm mt-1">PLATFORM</span>
                 </div>
               </button>
             </div>
           </div>
 
-          {/* Revolving Circular Windows - Perfect orbit around center */}
-          <div className="absolute inset-0 flex items-center justify-center z-30">
+          {/* Revolving Circular Windows */}
+          <div className="absolute inset-0 flex items-center justify-center z-25 mt-12">
             <div 
-              className="relative w-80 h-80"
+              className="relative w-[400px] h-[400px] md:w-[600px] md:h-[600px]"
               style={{
                 transform: hoveredWindow !== null 
-                  ? `rotate(${scrollY * 0.5 + autoRotation}deg)` 
-                  : `rotate(${scrollY * 0.5 + autoRotation}deg)`,
-                transition: 'transform 0.2s ease-out'
+                  ? `rotate(${scrollY * 0.03}deg)` 
+                  : `rotate(${scrollY * 0.03 + autoRotation}deg)`,
+                transition: hoveredWindow !== null ? 'transform 0.1s ease-out' : 'none'
               }}
             >
               {circularWindows.map((window, index) => {
@@ -364,10 +373,8 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
                     key={window.id}
                     className="absolute group circular-window"
                     style={{
-                      left: '50%',
-                      top: '50%',
-                      transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
-                      transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transform: `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`,
+                      transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
                       zIndex: hoveredWindow === index ? 35 : 25
                     }}
                     onClick={(e) => {
@@ -378,9 +385,9 @@ const ParallaxLandingPage: React.FC<ParallaxLandingPageProps> = ({ onEnter }) =>
                     onMouseEnter={() => handleWindowHover(index)}
                     onMouseLeave={handleWindowLeave}
                   >
-                    <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full border-2 backdrop-blur-xl transition-all duration-500 bg-black/30 cursor-pointer border-white/30 hover:border-white/60 hover:scale-110">
+                    <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full border-2 backdrop-blur-xl transition-all duration-500 bg-black/30 cursor-pointer border-white/30 hover:border-white/60 hover:scale-110">
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <window.icon className={`h-5 w-5 md:h-6 md:w-6 transition-colors ${
+                        <window.icon className={`h-6 w-6 md:h-8 md:w-8 transition-colors ${
                           position.isActive ? 'text-blue-300' : 'text-white'
                         }`} />
                       </div>
