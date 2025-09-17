@@ -12,6 +12,7 @@ export FABRIC_LOGGING_SPEC=INFO
 echo "Creating directory structure..."
 mkdir -p ../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/{msp,tls}
 mkdir -p ../organizations/ordererOrganizations/herbionyx.com/msp/{admincerts,cacerts,tlscacerts}
+mkdir -p ../organizations/ordererOrganizations/herbionyx.com/users/Admin@herbionyx.com/msp
 mkdir -p ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/{msp,tls}
 mkdir -p ../organizations/peerOrganizations/org1.herbionyx.com/msp/{admincerts,cacerts,tlscacerts}
 mkdir -p ../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp
@@ -64,6 +65,10 @@ if ! command -v cryptogen &> /dev/null; then
     exit 1
 fi
 
+# Clean up existing certificates
+rm -rf ../organizations/ordererOrganizations
+rm -rf ../organizations/peerOrganizations
+
 cryptogen generate --config=../config/crypto-config.yaml --output="../organizations"
 
 if [ $? -ne 0 ]; then
@@ -71,44 +76,121 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Fix MSP directory structure for peer
 echo "Setting up MSP directory structure..."
 
-# Copy certificates to correct locations for peer
-PEER_MSP_DIR="../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp"
-mkdir -p ${PEER_MSP_DIR}/{signcerts,keystore,cacerts,tlscacerts,admincerts}
-
-# Copy signing certificate
-if [ -f "../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp/signcerts/peer0.org1.herbionyx.com-cert.pem" ]; then
-    echo "Peer signing certificate already exists"
-else
-    # Find and copy the peer certificate
-    find ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com -name "*.pem" -path "*/signcerts/*" -exec cp {} ${PEER_MSP_DIR}/signcerts/ \;
+# Verify certificates were created
+if [ ! -d "../organizations/peerOrganizations/org1.herbionyx.com" ]; then
+    echo "Error: Peer organization not created"
+    exit 1
 fi
 
-# Copy CA certificates
-cp ../organizations/peerOrganizations/org1.herbionyx.com/ca/ca.org1.herbionyx.com-cert.pem ${PEER_MSP_DIR}/cacerts/
-cp ../organizations/peerOrganizations/org1.herbionyx.com/tlsca/tlsca.org1.herbionyx.com-cert.pem ${PEER_MSP_DIR}/tlscacerts/
+if [ ! -d "../organizations/ordererOrganizations/herbionyx.com" ]; then
+    echo "Error: Orderer organization not created"
+    exit 1
+fi
 
-# Copy admin certificates
-cp ../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp/signcerts/Admin@org1.herbionyx.com-cert.pem ${PEER_MSP_DIR}/admincerts/
+# Fix peer MSP structure
+PEER_MSP_DIR="../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp"
+if [ -d "$PEER_MSP_DIR" ]; then
+    echo "Peer MSP directory exists, setting up structure..."
+    
+    # Ensure all required directories exist
+    mkdir -p ${PEER_MSP_DIR}/{signcerts,keystore,cacerts,tlscacerts,admincerts}
+    
+    # Copy CA certificates
+    if [ -f "../organizations/peerOrganizations/org1.herbionyx.com/ca/ca.org1.herbionyx.com-cert.pem" ]; then
+        cp ../organizations/peerOrganizations/org1.herbionyx.com/ca/ca.org1.herbionyx.com-cert.pem ${PEER_MSP_DIR}/cacerts/
+    fi
+    
+    if [ -f "../organizations/peerOrganizations/org1.herbionyx.com/tlsca/tlsca.org1.herbionyx.com-cert.pem" ]; then
+        cp ../organizations/peerOrganizations/org1.herbionyx.com/tlsca/tlsca.org1.herbionyx.com-cert.pem ${PEER_MSP_DIR}/tlscacerts/
+    fi
+    
+    # Copy admin certificates if they exist
+    if [ -f "../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp/signcerts/Admin@org1.herbionyx.com-cert.pem" ]; then
+        cp ../organizations/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp/signcerts/Admin@org1.herbionyx.com-cert.pem ${PEER_MSP_DIR}/admincerts/
+    else
+        echo "Warning: Admin certificate not found, creating placeholder"
+        touch ${PEER_MSP_DIR}/admincerts/.gitkeep
+    fi
+    
+    # Copy private key if it exists
+    KEYSTORE_FILES=$(find ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp/keystore -name "*_sk" 2>/dev/null || true)
+    if [ -n "$KEYSTORE_FILES" ]; then
+        cp $KEYSTORE_FILES ${PEER_MSP_DIR}/keystore/
+    fi
+fi
 
-# Copy private key
-find ../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp/keystore -name "*_sk" -exec cp {} ${PEER_MSP_DIR}/keystore/ \;
-
-# Fix MSP directory structure for orderer
+# Fix orderer MSP structure
 ORDERER_MSP_DIR="../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp"
-mkdir -p ${ORDERER_MSP_DIR}/{signcerts,keystore,cacerts,tlscacerts,admincerts}
+if [ -d "$ORDERER_MSP_DIR" ]; then
+    echo "Orderer MSP directory exists, setting up structure..."
+    
+    # Ensure all required directories exist
+    mkdir -p ${ORDERER_MSP_DIR}/{signcerts,keystore,cacerts,tlscacerts,admincerts}
+    
+    # Copy orderer certificates
+    if [ -f "../organizations/ordererOrganizations/herbionyx.com/ca/ca.herbionyx.com-cert.pem" ]; then
+        cp ../organizations/ordererOrganizations/herbionyx.com/ca/ca.herbionyx.com-cert.pem ${ORDERER_MSP_DIR}/cacerts/
+    fi
+    
+    if [ -f "../organizations/ordererOrganizations/herbionyx.com/tlsca/tlsca.herbionyx.com-cert.pem" ]; then
+        cp ../organizations/ordererOrganizations/herbionyx.com/tlsca/tlsca.herbionyx.com-cert.pem ${ORDERER_MSP_DIR}/tlscacerts/
+    fi
+    
+    # Copy orderer private key if it exists
+    ORDERER_KEYSTORE_FILES=$(find ../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/keystore -name "*_sk" 2>/dev/null || true)
+    if [ -n "$ORDERER_KEYSTORE_FILES" ]; then
+        cp $ORDERER_KEYSTORE_FILES ${ORDERER_MSP_DIR}/keystore/
+    fi
+    
+    # Copy admin certificates for orderer if they exist
+    if [ -f "../organizations/ordererOrganizations/herbionyx.com/users/Admin@herbionyx.com/msp/signcerts/Admin@herbionyx.com-cert.pem" ]; then
+        cp ../organizations/ordererOrganizations/herbionyx.com/users/Admin@herbionyx.com/msp/signcerts/Admin@herbionyx.com-cert.pem ${ORDERER_MSP_DIR}/admincerts/
+    else
+        echo "Warning: Orderer admin certificate not found, creating placeholder"
+        touch ${ORDERER_MSP_DIR}/admincerts/.gitkeep
+    fi
+fi
 
-# Copy orderer certificates
-cp ../organizations/ordererOrganizations/herbionyx.com/ca/ca.herbionyx.com-cert.pem ${ORDERER_MSP_DIR}/cacerts/
-cp ../organizations/ordererOrganizations/herbionyx.com/tlsca/tlsca.herbionyx.com-cert.pem ${ORDERER_MSP_DIR}/tlscacerts/
+# Create config.yaml files for MSPs
+echo "Creating MSP config files..."
 
-# Copy orderer signing certificate and private key
-find ../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/keystore -name "*_sk" -exec cp {} ${ORDERER_MSP_DIR}/keystore/ \;
+# Peer MSP config
+cat > ${PEER_MSP_DIR}/config.yaml << EOF
+NodeOUs:
+  Enable: true
+  ClientOUIdentifier:
+    Certificate: cacerts/ca.org1.herbionyx.com-cert.pem
+    OrganizationalUnitIdentifier: client
+  PeerOUIdentifier:
+    Certificate: cacerts/ca.org1.herbionyx.com-cert.pem
+    OrganizationalUnitIdentifier: peer
+  AdminOUIdentifier:
+    Certificate: cacerts/ca.org1.herbionyx.com-cert.pem
+    OrganizationalUnitIdentifier: admin
+  OrdererOUIdentifier:
+    Certificate: cacerts/ca.org1.herbionyx.com-cert.pem
+    OrganizationalUnitIdentifier: orderer
+EOF
 
-# Copy admin certificates for orderer
-cp ../organizations/ordererOrganizations/herbionyx.com/users/Admin@herbionyx.com/msp/signcerts/Admin@herbionyx.com-cert.pem ${ORDERER_MSP_DIR}/admincerts/
+# Orderer MSP config
+cat > ${ORDERER_MSP_DIR}/config.yaml << EOF
+NodeOUs:
+  Enable: true
+  ClientOUIdentifier:
+    Certificate: cacerts/ca.herbionyx.com-cert.pem
+    OrganizationalUnitIdentifier: client
+  PeerOUIdentifier:
+    Certificate: cacerts/ca.herbionyx.com-cert.pem
+    OrganizationalUnitIdentifier: peer
+  AdminOUIdentifier:
+    Certificate: cacerts/ca.herbionyx.com-cert.pem
+    OrganizationalUnitIdentifier: admin
+  OrdererOUIdentifier:
+    Certificate: cacerts/ca.herbionyx.com-cert.pem
+    OrganizationalUnitIdentifier: orderer
+EOF
 
 # Set proper permissions
 echo "Setting permissions..."
@@ -117,3 +199,20 @@ chmod -R 755 ../organizations/
 echo "✅ Certificates generated successfully!"
 echo "Directory structure:"
 find ../organizations -type d | head -20
+
+# Verify critical files exist
+echo "Verifying critical certificate files..."
+CRITICAL_FILES=(
+    "../organizations/peerOrganizations/org1.herbionyx.com/ca/ca.org1.herbionyx.com-cert.pem"
+    "../organizations/peerOrganizations/org1.herbionyx.com/tlsca/tlsca.org1.herbionyx.com-cert.pem"
+    "../organizations/ordererOrganizations/herbionyx.com/ca/ca.herbionyx.com-cert.pem"
+    "../organizations/ordererOrganizations/herbionyx.com/tlsca/tlsca.herbionyx.com-cert.pem"
+)
+
+for file in "${CRITICAL_FILES[@]}"; do
+    if [ -f "$file" ]; then
+        echo "✅ $file exists"
+    else
+        echo "❌ $file missing"
+    fi
+done

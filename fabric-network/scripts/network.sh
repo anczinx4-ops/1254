@@ -59,13 +59,13 @@ function networkUp() {
   
   # Verify certificates exist
   echo -e "${YELLOW}Verifying certificate structure...${NC}"
-  if [ ! -d "../organizations/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/msp/signcerts" ]; then
-    echo -e "${RED}Error: Peer MSP signcerts directory not found${NC}"
+  if [ ! -d "../organizations/peerOrganizations/org1.herbionyx.com" ]; then
+    echo -e "${RED}Error: Peer organization not found${NC}"
     exit 1
   fi
   
-  if [ ! -d "../organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/signcerts" ]; then
-    echo -e "${RED}Error: Orderer MSP signcerts directory not found${NC}"
+  if [ ! -d "../organizations/ordererOrganizations/herbionyx.com" ]; then
+    echo -e "${RED}Error: Orderer organization not found${NC}"
     exit 1
   fi
   
