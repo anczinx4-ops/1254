@@ -82,7 +82,37 @@ function networkUp() {
   
   # Wait for containers to start
   echo -e "${YELLOW}Waiting for containers to start...${NC}"
-  sleep 45
+  sleep 30
+  
+  # Wait for orderer to be ready
+  echo -e "${YELLOW}Waiting for orderer to be ready...${NC}"
+  for i in {1..30}; do
+    if docker logs orderer.herbionyx.com 2>&1 | grep -q "Starting orderer"; then
+      echo -e "${GREEN}✅ Orderer is ready${NC}"
+      break
+    fi
+    if [ $i -eq 30 ]; then
+      echo -e "${RED}❌ Orderer startup timeout${NC}"
+      docker logs orderer.herbionyx.com --tail 20
+      exit 1
+    fi
+    sleep 2
+  done
+  
+  # Wait for peer to be ready
+  echo -e "${YELLOW}Waiting for peer to be ready...${NC}"
+  for i in {1..30}; do
+    if docker logs peer0.org1.herbionyx.com 2>&1 | grep -q "Starting peer"; then
+      echo -e "${GREEN}✅ Peer is ready${NC}"
+      break
+    fi
+    if [ $i -eq 30 ]; then
+      echo -e "${RED}❌ Peer startup timeout${NC}"
+      docker logs peer0.org1.herbionyx.com --tail 20
+      exit 1
+    fi
+    sleep 2
+  done
   
   # Check container status
   echo -e "${YELLOW}Checking container status...${NC}"
@@ -116,7 +146,15 @@ function generateGenesis() {
   # Create channel-artifacts directory
   mkdir -p ../channel-artifacts
   
-  echo -e "${GREEN}✅ Using channel participation API - no genesis block needed${NC}"
+  # Generate system channel genesis block
+  configtxgen -profile HerbionYXSystemChannel -channelID system-channel -outputBlock ../channel-artifacts/genesis.block
+  
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}Failed to generate genesis block${NC}"
+    exit 1
+  fi
+  
+  echo -e "${GREEN}✅ Genesis block generated successfully${NC}"
 }
 
 function createChannel() {
@@ -198,25 +236,25 @@ function createChannel() {
   
   # Create channel genesis block
   echo -e "${YELLOW}Creating channel genesis block...${NC}"
-  configtxgen -profile HerbionYXChannel -outputBlock ../channel-artifacts/${CHANNEL_NAME}.block -channelID $CHANNEL_NAME
+  configtxgen -profile HerbionYXChannel -outputCreateChannelTx ../channel-artifacts/${CHANNEL_NAME}.tx -channelID $CHANNEL_NAME
   
   if [ $? -ne 0 ]; then
-    echo -e "${RED}Failed to generate channel genesis block${NC}"
+    echo -e "${RED}Failed to generate channel configuration transaction${NC}"
     exit 1
   fi
   
-  # Join channel to orderer using osnadmin
-  echo -e "${YELLOW}Joining channel to orderer...${NC}"
-  docker exec cli osnadmin channel join \
-    --channelID $CHANNEL_NAME \
-    --config-block ./channel-artifacts/${CHANNEL_NAME}.block \
-    -o orderer.herbionyx.com:7053 \
-    --ca-file /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem \
-    --client-cert /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/tls/server.crt \
-    --client-key /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/tls/server.key
+  # Create channel using peer CLI
+  echo -e "${YELLOW}Creating channel using peer CLI...${NC}"
+  docker exec cli peer channel create \
+    -o orderer.herbionyx.com:7050 \
+    -c $CHANNEL_NAME \
+    -f ./channel-artifacts/${CHANNEL_NAME}.tx \
+    --outputBlock ./channel-artifacts/${CHANNEL_NAME}.block \
+    --tls \
+    --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp/tlscacerts/tlsca.herbionyx.com-cert.pem
   
   if [ $? -ne 0 ]; then
-    echo -e "${RED}Failed to join channel to orderer${NC}"
+    echo -e "${RED}Failed to create channel${NC}"
     exit 1
   fi
   
@@ -248,8 +286,12 @@ function deployChaincode() {
   
   # Package chaincode using CLI container
   echo -e "${YELLOW}Packaging chaincode...${NC}"
+  
+  # First, copy chaincode to CLI container
+  docker cp ../chaincode cli:/opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode-src
+  
   docker exec cli peer lifecycle chaincode package ${CHAINCODE_NAME}.tar.gz \
-    --path ./chaincode \
+    --path ./chaincode-src \
     --lang node \
     --label ${CHAINCODE_NAME}_${CHAINCODE_VERSION}
   
