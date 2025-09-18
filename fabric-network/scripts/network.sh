@@ -144,12 +144,37 @@ function createChannel() {
   
   # First, test basic connectivity
   echo -e "${YELLOW}Testing container connectivity...${NC}"
-  docker exec cli ping -c 3 orderer.herbionyx.com
   
-  if [ $? -ne 0 ]; then
-    echo -e "${RED}Cannot reach orderer from CLI container${NC}"
-    echo -e "${YELLOW}Available containers:${NC}"
-    docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+  # Wait for CLI container to be ready with network utilities
+  echo -e "${YELLOW}Waiting for CLI container to be ready...${NC}"
+  for i in {1..30}; do
+    if docker exec cli which ping > /dev/null 2>&1; then
+      echo -e "${GREEN}CLI container is ready with network utilities${NC}"
+      break
+    fi
+    echo "Waiting for CLI container setup... ($i/30)"
+    sleep 2
+  done
+  
+  # Test connectivity using netcat instead of ping
+  echo -e "${YELLOW}Testing orderer connectivity...${NC}"
+  if docker exec cli nc -z orderer.herbionyx.com 7050; then
+    echo -e "${GREEN}✅ Orderer is reachable on port 7050${NC}"
+  else
+    echo -e "${RED}❌ Cannot reach orderer on port 7050${NC}"
+    echo -e "${YELLOW}Checking if orderer container is running...${NC}"
+    docker ps --filter name=orderer.herbionyx.com
+    echo -e "${YELLOW}Checking orderer logs...${NC}"
+    docker logs orderer.herbionyx.com --tail 20
+    exit 1
+  fi
+  
+  # Test peer connectivity
+  echo -e "${YELLOW}Testing peer connectivity...${NC}"
+  if docker exec cli nc -z peer0.org1.herbionyx.com 7051; then
+    echo -e "${GREEN}✅ Peer is reachable on port 7051${NC}"
+  else
+    echo -e "${RED}❌ Cannot reach peer on port 7051${NC}"
     exit 1
   fi
   

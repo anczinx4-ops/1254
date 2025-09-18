@@ -100,6 +100,9 @@ services:
       - CORE_PEER_BCCSP_SW_HASH=SHA2
       - CORE_PEER_BCCSP_SW_SECURITY=256
       - CORE_PEER_BCCSP_SW_FILEKEYSTORE_KEYSTORE=/etc/hyperledger/fabric/msp/keystore
+      # Add DNS configuration
+      - CORE_PEER_GOSSIP_USELEADERELECTION=true
+      - CORE_PEER_GOSSIP_ORGLEADER=false
       - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
       - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
       - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
@@ -135,7 +138,7 @@ services:
 
   # CLI container with DNS utilities
   cli:
-    image: hyperledger/fabric-tools:latest
+    image: hyperledger/fabric-tools:2.5.4
     tty: true
     stdin_open: true
     environment:
@@ -150,11 +153,19 @@ services:
       - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.herbionyx.com/peers/peer0.org1.herbionyx.com/tls/ca.crt
       - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/org1.herbionyx.com/users/Admin@org1.herbionyx.com/msp
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
-    command: /bin/bash
+    command: /bin/bash -c "
+      echo 'Installing network utilities...' &&
+      apt-get update -qq &&
+      apt-get install -y -qq iputils-ping dnsutils curl netcat-openbsd &&
+      echo 'Network utilities installed successfully' &&
+      /bin/bash"
     volumes:
       - ./organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
       - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
       - ../../chaincode:/opt/gopath/src/github.com/chaincode
+    extra_hosts:
+      - "orderer.herbionyx.com:127.0.0.1"
+      - "peer0.org1.herbionyx.com:127.0.0.1"
     container_name: cli
     hostname: cli
     depends_on:
@@ -162,6 +173,8 @@ services:
       - peer0.org1.herbionyx.com
     networks:
       - herbionyx
+    restart: unless-stopped
+    privileged: true
 
 volumes:
   orderer.herbionyx.com:
