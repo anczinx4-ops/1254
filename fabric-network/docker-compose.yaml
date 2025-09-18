@@ -40,10 +40,9 @@ services:
       - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
       - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      # CRITICAL FIX: Enable system channel
-      - ORDERER_GENERAL_BOOTSTRAPMETHOD=file
-      - ORDERER_GENERAL_BOOTSTRAPFILE=/var/hyperledger/orderer/orderer.genesis.block
-      - ORDERER_CHANNELPARTICIPATION_ENABLED=false
+      # CRITICAL FIX: Use channel participation API (Fabric 2.3+)
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
       - ORDERER_ADMIN_TLS_ENABLED=true
       - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
@@ -62,7 +61,6 @@ services:
     volumes:
       - ./organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/msp:/var/hyperledger/orderer/msp
       - ./organizations/ordererOrganizations/herbionyx.com/orderers/orderer.herbionyx.com/tls/:/var/hyperledger/orderer/tls
-      - ./channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
       - orderer.herbionyx.com:/var/hyperledger/production/orderer
     ports:
       - 7050:7050
@@ -165,7 +163,7 @@ services:
     volumes:
       - ./organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
       - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
-      - ../../chaincode:/opt/gopath/src/github.com/chaincode
+      - ../chaincode:/opt/gopath/src/github.com/hyperledger/fabric/peer/chaincode
     container_name: cli
     hostname: cli
     depends_on:
