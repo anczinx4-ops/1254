@@ -45,11 +45,28 @@ docker-compose up -d
 
 # Wait for containers to be ready
 echo -e "${YELLOW}6. Waiting for containers to be ready...${NC}"
-sleep 30
+sleep 45
 
 # Check container status
 echo -e "${YELLOW}7. Checking container status...${NC}"
-docker-compose ps
+docker-compose ps --format table
+
+# Verify CLI container has network utilities
+echo -e "${YELLOW}7.1. Verifying CLI container network utilities...${NC}"
+for i in {1..30}; do
+  if docker exec cli bash -c "which nc && nc -h" > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ CLI container network utilities ready${NC}"
+    break
+  fi
+  if [ $i -eq 30 ]; then
+    echo -e "${YELLOW}Installing network utilities in CLI container...${NC}"
+    docker exec cli bash -c "
+      apt-get update -qq > /dev/null 2>&1 &&
+      apt-get install -y -qq netcat-openbsd telnet iputils-ping curl dnsutils > /dev/null 2>&1
+    "
+  fi
+  sleep 2
+done
 
 # Test connectivity
 echo -e "${YELLOW}8. Testing connectivity...${NC}"

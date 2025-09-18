@@ -82,7 +82,7 @@ function networkUp() {
   
   # Wait for containers to start
   echo -e "${YELLOW}Waiting for containers to start...${NC}"
-  sleep 30
+  sleep 45
   
   # Check container status
   echo -e "${YELLOW}Checking container status...${NC}"
@@ -145,36 +145,62 @@ function createChannel() {
   # First, test basic connectivity
   echo -e "${YELLOW}Testing container connectivity...${NC}"
   
-  # Wait for CLI container to be ready with network utilities
-  echo -e "${YELLOW}Waiting for CLI container to be ready...${NC}"
-  for i in {1..30}; do
-    if docker exec cli which ping > /dev/null 2>&1; then
-      echo -e "${GREEN}CLI container is ready with network utilities${NC}"
+  # Wait for CLI container to be ready with network utilities - IMPROVED
+  echo -e "${YELLOW}Waiting for CLI container to be ready with network utilities...${NC}"
+  for i in {1..60}; do
+    if docker exec cli bash -c "which nc && nc -h" > /dev/null 2>&1; then
+      echo -e "${GREEN}✅ CLI container is ready with network utilities${NC}"
       break
     fi
-    echo "Waiting for CLI container setup... ($i/30)"
+    if [ $i -eq 60 ]; then
+      echo -e "${RED}❌ CLI container setup timeout${NC}"
+      echo -e "${YELLOW}Checking CLI container logs...${NC}"
+      docker logs cli --tail 30
+      echo -e "${YELLOW}Attempting to install network utilities manually...${NC}"
+      docker exec cli bash -c "
+        apt-get update -qq > /dev/null 2>&1 &&
+        apt-get install -y -qq netcat-openbsd telnet iputils-ping curl > /dev/null 2>&1 &&
+        echo 'Manual installation completed'
+      " || {
+        echo -e "${RED}Failed to install network utilities${NC}"
+        exit 1
+      }
+      break
+    fi
+    echo "Waiting for CLI container setup... ($i/60)"
     sleep 2
   done
   
-  # Test connectivity using netcat instead of ping
+  # Test connectivity using multiple methods
   echo -e "${YELLOW}Testing orderer connectivity...${NC}"
-  if docker exec cli nc -z orderer.herbionyx.com 7050; then
+  if docker exec cli timeout 10 nc -z orderer.herbionyx.com 7050 2>/dev/null; then
     echo -e "${GREEN}✅ Orderer is reachable on port 7050${NC}"
+  elif docker exec cli timeout 5 bash -c '</dev/tcp/orderer.herbionyx.com/7050' 2>/dev/null; then
+    echo -e "${GREEN}✅ Orderer is reachable on port 7050 (via bash TCP)${NC}"
   else
     echo -e "${RED}❌ Cannot reach orderer on port 7050${NC}"
     echo -e "${YELLOW}Checking if orderer container is running...${NC}"
-    docker ps --filter name=orderer.herbionyx.com
+    docker ps --filter name=orderer.herbionyx.com --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
     echo -e "${YELLOW}Checking orderer logs...${NC}"
     docker logs orderer.herbionyx.com --tail 20
+    echo -e "${YELLOW}Checking network connectivity from CLI container...${NC}"
+    docker exec cli bash -c "
+      echo 'Network interfaces:' && ip addr show &&
+      echo 'DNS resolution:' && nslookup orderer.herbionyx.com &&
+      echo 'Routing table:' && ip route
+    "
     exit 1
   fi
   
   # Test peer connectivity
   echo -e "${YELLOW}Testing peer connectivity...${NC}"
-  if docker exec cli nc -z peer0.org1.herbionyx.com 7051; then
+  if docker exec cli timeout 10 nc -z peer0.org1.herbionyx.com 7051 2>/dev/null; then
     echo -e "${GREEN}✅ Peer is reachable on port 7051${NC}"
   else
     echo -e "${RED}❌ Cannot reach peer on port 7051${NC}"
+    echo -e "${YELLOW}Checking peer container status...${NC}"
+    docker ps --filter name=peer0.org1.herbionyx.com --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    docker logs peer0.org1.herbionyx.com --tail 20
     exit 1
   fi
   
